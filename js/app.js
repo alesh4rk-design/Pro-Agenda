@@ -36,8 +36,9 @@ registrarRota("pendencias", renderPendencias);
 registrarRota("configuracoes", renderConfiguracoes);
 registrarRota("mais", renderMais);
 
-function renderConfiguracoes(view) {
+async function renderConfiguracoes(view) {
   const user = getUsuario();
+  const chaveAtual = await getChaveIA();
   view.innerHTML = `
     <div class="pagina-header"><div><h1>⚙️ Configurações</h1><p>Preferências pessoais da sua central.</p></div></div>
     <div class="grid grid-cols-2">
@@ -56,9 +57,9 @@ function renderConfiguracoes(view) {
       </div>
       <div class="card">
         <h3>✨ Melhorar textos com IA</h3>
-        <p>Cole aqui sua chave gratuita do Google Gemini para habilitar o botão "Melhorar com IA" nos editores de Treinamentos e Anotações. A chave fica salva só neste navegador, nunca é enviada ao Firestore.</p>
+        <p>Cole aqui sua chave gratuita do Google Gemini para habilitar o botão "Melhorar com IA" nos editores de Treinamentos e Anotações. A chave fica salva no seu espaço privado do Firestore (só sua conta acessa) e sincroniza entre seus aparelhos.</p>
         <div class="campo full">
-          <input id="cfg-chave-ia" type="password" placeholder="Cole sua chave da API do Gemini" value="${getChaveIA()}">
+          <input id="cfg-chave-ia" type="password" placeholder="Cole sua chave da API do Gemini" value="${chaveAtual}">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" id="cfg-salvar-ia">Salvar chave</button>
@@ -73,12 +74,12 @@ function renderConfiguracoes(view) {
     </div>
   `;
   view.querySelector("#cfg-logout").onclick = async () => { await sair(); };
-  view.querySelector("#cfg-salvar-ia").onclick = () => {
-    salvarChaveIA(view.querySelector("#cfg-chave-ia").value);
-    toast("Chave de IA salva neste navegador.", "sucesso");
+  view.querySelector("#cfg-salvar-ia").onclick = async () => {
+    await salvarChaveIA(view.querySelector("#cfg-chave-ia").value);
+    toast("Chave de IA salva na sua conta.", "sucesso");
   };
-  view.querySelector("#cfg-remover-ia").onclick = () => {
-    salvarChaveIA("");
+  view.querySelector("#cfg-remover-ia").onclick = async () => {
+    await salvarChaveIA("");
     view.querySelector("#cfg-chave-ia").value = "";
     toast("Chave de IA removida.", "sucesso");
   };

@@ -5,10 +5,11 @@ service cloud.firestore {
 
     // Cada usuário só pode ler/escrever dentro do seu próprio espaço:
     // users/{uid}/(contratos|agenda|anotacoes|treinamentos|documentos|pendencias|visitas)/{docId}
+    // users/{uid}/config/preferencias (ex.: chave da IA, salva de forma privada)
     match /users/{userId} {
       match /{colecao}/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId
-          && colecao in ['contratos', 'agenda', 'anotacoes', 'treinamentos', 'documentos', 'pendencias', 'visitas'];
+          && colecao in ['contratos', 'agenda', 'anotacoes', 'treinamentos', 'documentos', 'pendencias', 'visitas', 'config'];
       }
     }
 

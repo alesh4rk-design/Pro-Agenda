@@ -1,19 +1,39 @@
 // Integração com Google Gemini (plano gratuito) para melhorar textos de treinamentos e anotações.
-// A chave de API fica salva apenas no navegador do usuário (localStorage), nunca no Firestore.
-const CHAVE_STORAGE = "inspetor-gemini-key";
-const MODELO = "gemini-2.0-flash";
+// A chave de API fica salva no Firestore, no espaço privado do usuário (users/{uid}/config/preferencias),
+// protegida pelas mesmas regras que restringem os dados só à própria conta.
+import { db, doc, getDoc, setDoc } from "./firebase.js";
+import { getUsuario } from "./auth.js";
 
-export function getChaveIA() {
-  return localStorage.getItem(CHAVE_STORAGE) || "";
+const MODELO = "gemini-2.0-flash";
+const CHAVE_STORAGE_LEGADA = "inspetor-gemini-key";
+
+function refPreferencias() {
+  const user = getUsuario();
+  if (!user) throw new Error("Usuário não autenticado.");
+  return doc(db, "users", user.uid, "config", "preferencias");
 }
 
-export function salvarChaveIA(chave) {
-  if (chave) localStorage.setItem(CHAVE_STORAGE, chave.trim());
-  else localStorage.removeItem(CHAVE_STORAGE);
+export async function getChaveIA() {
+  const snap = await getDoc(refPreferencias());
+  const chaveFirestore = snap.exists() ? snap.data().chaveGemini || "" : "";
+  if (chaveFirestore) return chaveFirestore;
+
+  // Migração de instalações antigas que salvavam a chave só no navegador.
+  const chaveLegada = localStorage.getItem(CHAVE_STORAGE_LEGADA);
+  if (chaveLegada) {
+    await salvarChaveIA(chaveLegada);
+    localStorage.removeItem(CHAVE_STORAGE_LEGADA);
+    return chaveLegada;
+  }
+  return "";
+}
+
+export async function salvarChaveIA(chave) {
+  await setDoc(refPreferencias(), { chaveGemini: chave ? chave.trim() : "" }, { merge: true });
 }
 
 export async function melhorarTexto(textoOriginal, instrucao = "") {
-  const chave = getChaveIA();
+  const chave = await getChaveIA();
   if (!chave) {
     const erro = new Error("Nenhuma chave de IA configurada. Adicione sua chave gratuita do Google Gemini em Configurações.");
     erro.semChave = true;
