@@ -54,6 +54,8 @@ body {
   color: var(--texto);
   -webkit-tap-highlight-color: transparent;
 }
+[hidden] { display: none !important; }
+
 h1, h2, h3, h4 { margin: 0 0 .4em; font-weight: 600; letter-spacing: -.01em; }
 p { margin: 0 0 .6em; color: var(--texto-suave); }
 a { color: inherit; text-decoration: none; }
