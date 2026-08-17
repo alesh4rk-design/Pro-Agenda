@@ -129,8 +129,15 @@ function abrirApresentacao(t) {
   desenhar();
 }
 
-export function abrirFormularioTreinamento(aoSalvar, treinamentoEditar) {
+async function sugestoesDeCategorias() {
+  const treinamentos = await listarTudo("treinamentos", "criadoEm").catch(() => []);
+  const usadas = treinamentos.map((t) => t.categoria).filter(Boolean);
+  return [...new Set([...CATEGORIAS, ...usadas])];
+}
+
+export async function abrirFormularioTreinamento(aoSalvar, treinamentoEditar) {
   const t = treinamentoEditar || {};
+  const categorias = await sugestoesDeCategorias();
   const overlay = abrirModal({
     titulo: treinamentoEditar ? "Editar treinamento" : "Novo treinamento",
     tamanho: "grande",
@@ -138,8 +145,9 @@ export function abrirFormularioTreinamento(aoSalvar, treinamentoEditar) {
       <form id="form-treinamento">
         <div class="form-grid">
           <div class="campo full"><label>Título</label><input name="titulo" required value="${escaparHtml(t.titulo || "")}"></div>
-          <div class="campo"><label>Categoria</label>
-            <select name="categoria">${CATEGORIAS.map((c) => `<option ${t.categoria === c ? "selected" : ""}>${c}</option>`).join("")}</select>
+          <div class="campo"><label>Categoria (digite para criar uma nova, se precisar)</label>
+            <input name="categoria" list="lista-categorias" required value="${escaparHtml(t.categoria || "")}">
+            <datalist id="lista-categorias">${categorias.map((c) => `<option value="${escaparHtml(c)}">`).join("")}</datalist>
           </div>
           <div class="campo"><label>Público-alvo</label><input name="publicoAlvo" value="${escaparHtml(t.publicoAlvo || "")}"></div>
           <div class="campo full"><label>Objetivo</label><input name="objetivo" value="${escaparHtml(t.objetivo || "")}"></div>

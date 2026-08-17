@@ -1,4 +1,4 @@
-# Pro Agenda
+# Central do Inspetor
 
 Sistema web pessoal de organização profissional para Inspetor de Treinamento em segurança patrimonial. HTML/CSS/JS puros, PWA, Firebase (Auth + Firestore).
 

@@ -1,6 +1,6 @@
 {
-  "name": "Pro Agenda",
-  "short_name": "Pro Agenda",
+  "name": "Central do Inspetor",
+  "short_name": "Inspetor",
   "description": "Central pessoal de organização profissional para Inspetor de Treinamento e Segurança Patrimonial",
   "start_url": "./index.html",
   "scope": "./",

@@ -69,14 +69,12 @@ export async function renderContratoDetalhe(view, id) {
   async function desenharAba() {
     const corpo = view.querySelector("#aba-corpo");
     if (abaAtiva === "Informações") {
+      const contatos = contrato.contatos || [];
       corpo.innerHTML = `
         <div class="grid grid-cols-2">
           <div class="card"><h3>Dados gerais</h3>
-            ${linha("Síndico", contrato.sindico)}
-            ${linha("Zelador", contrato.zelador)}
-            ${linha("Administradora", contrato.administradora)}
-            ${linha("Telefone", contrato.telefone)}
-            ${linha("E-mail", contrato.email)}
+            ${linha("Telefone geral", contrato.telefone)}
+            ${linha("E-mail geral", contrato.email)}
           </div>
           <div class="card"><h3>Operação</h3>
             ${linha("Qtd. de postos", contrato.qtdPostos)}
@@ -85,9 +83,32 @@ export async function renderContratoDetalhe(view, id) {
             ${linha("Última visita", contrato.ultimaVisita ? formatarData(contrato.ultimaVisita) : "—")}
             ${linha("Próxima visita", contrato.proximaVisita ? formatarData(contrato.proximaVisita) : "—")}
           </div>
+          <div class="card" style="grid-column:1/-1">
+            <div class="card-header"><h3>Contatos</h3><button class="btn btn-primary btn-sm" id="btn-add-contato">+ Adicionar contato</button></div>
+            <p style="font-size:12px;margin-top:-6px">Cadastre livremente os cargos envolvidos no contrato (síndico, zelador, concierge, supervisor orgânico, etc.).</p>
+            <div class="postos-lista">
+              ${contatos.length ? contatos.map((ct, i) => `
+                <div class="posto-item">
+                  <span><span class="badge badge-info">${escaparHtml(ct.cargo)}</span> &nbsp;${escaparHtml(ct.nome || "")}${ct.telefone ? " · " + escaparHtml(ct.telefone) : ""}</span>
+                  <div style="display:flex;gap:6px">
+                    <button class="btn btn-ghost btn-sm" data-editar-contato="${i}">Editar</button>
+                    <button class="btn btn-ghost btn-sm" data-remover-contato="${i}">Remover</button>
+                  </div>
+                </div>
+              `).join("") : `<div class="vazio-estado">Nenhum contato cadastrado.</div>`}
+            </div>
+          </div>
           <div class="card full" style="grid-column:1/-1"><h3>Observações</h3><p>${escaparHtml(contrato.observacoes || "Nenhuma observação.")}</p></div>
         </div>
       `;
+      corpo.querySelector("#btn-add-contato").onclick = () => abrirFormularioContato(contrato, contatos, desenharAba);
+      corpo.querySelectorAll("[data-editar-contato]").forEach((b) => b.onclick = () => abrirFormularioContato(contrato, contatos, desenharAba, Number(b.dataset.editarContato)));
+      corpo.querySelectorAll("[data-remover-contato]").forEach((b) => b.onclick = async () => {
+        const novos = contatos.filter((_, i) => i !== Number(b.dataset.removerContato));
+        await atualizar("contratos", contrato.id, { contatos: novos });
+        contrato.contatos = novos;
+        desenharAba();
+      });
     } else if (abaAtiva === "Postos") {
       const postos = contrato.postos || [];
       corpo.innerHTML = `
@@ -148,6 +169,49 @@ function listaSimples(itens, titulo, sub, vazio) {
   `).join("")}</div>`;
 }
 
+async function sugestoesDeCargos() {
+  const contratos = await listarTudo("contratos", "nome").catch(() => []);
+  const cargos = contratos.flatMap((c) => (c.contatos || []).map((ct) => ct.cargo)).filter(Boolean);
+  return [...new Set(cargos)];
+}
+
+async function abrirFormularioContato(contrato, contatos, aoSalvar, indiceEditar) {
+  const ct = indiceEditar != null ? contatos[indiceEditar] : {};
+  const sugestoes = await sugestoesDeCargos();
+  abrirModal({
+    titulo: indiceEditar != null ? "Editar contato" : "Novo contato",
+    corpoHtml: `
+      <form id="form-contato">
+        <div class="campo full">
+          <label>Cargo (digite livremente: síndico, zelador, concierge, supervisor orgânico...)</label>
+          <input name="cargo" list="lista-cargos" required value="${escaparHtml(ct.cargo || "")}">
+          <datalist id="lista-cargos">${sugestoes.map((s) => `<option value="${escaparHtml(s)}">`).join("")}</datalist>
+        </div>
+        <div class="campo full"><label>Nome</label><input name="nome" value="${escaparHtml(ct.nome || "")}"></div>
+        <div class="campo full"><label>Telefone</label><input name="telefone" value="${escaparHtml(ct.telefone || "")}"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-fechar>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    `,
+    aoMontar: (overlay) => {
+      overlay.querySelector("#form-contato").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const dados = Object.fromEntries(new FormData(e.target).entries());
+        const novos = [...contatos];
+        if (indiceEditar != null) novos[indiceEditar] = dados;
+        else novos.push(dados);
+        await atualizar("contratos", contrato.id, { contatos: novos });
+        contrato.contatos = novos;
+        toast("Contato salvo.", "sucesso");
+        fecharModal();
+        aoSalvar?.();
+      });
+    }
+  });
+}
+
 export function abrirFormularioContrato(aoSalvar, contratoEditar) {
   const c = contratoEditar || {};
   abrirModal({
@@ -158,11 +222,8 @@ export function abrirFormularioContrato(aoSalvar, contratoEditar) {
         <div class="form-grid">
           <div class="campo full"><label>Nome do condomínio/empresa</label><input name="nome" required value="${escaparHtml(c.nome || "")}"></div>
           <div class="campo full"><label>Endereço</label><input name="endereco" value="${escaparHtml(c.endereco || "")}"></div>
-          <div class="campo"><label>Síndico</label><input name="sindico" value="${escaparHtml(c.sindico || "")}"></div>
-          <div class="campo"><label>Zelador</label><input name="zelador" value="${escaparHtml(c.zelador || "")}"></div>
-          <div class="campo"><label>Administradora</label><input name="administradora" value="${escaparHtml(c.administradora || "")}"></div>
-          <div class="campo"><label>Telefone</label><input name="telefone" value="${escaparHtml(c.telefone || "")}"></div>
-          <div class="campo"><label>E-mail</label><input type="email" name="email" value="${escaparHtml(c.email || "")}"></div>
+          <div class="campo"><label>Telefone geral</label><input name="telefone" value="${escaparHtml(c.telefone || "")}"></div>
+          <div class="campo"><label>E-mail geral</label><input type="email" name="email" value="${escaparHtml(c.email || "")}"></div>
           <div class="campo"><label>Qtd. de postos</label><input type="number" min="0" name="qtdPostos" value="${c.qtdPostos ?? ""}"></div>
           <div class="campo"><label>Qtd. de colaboradores</label><input type="number" min="0" name="qtdColaboradores" value="${c.qtdColaboradores ?? ""}"></div>
           <div class="campo"><label>Data da implantação</label><input type="date" name="dataImplantacao" value="${c.dataImplantacao || ""}"></div>
@@ -182,7 +243,7 @@ export function abrirFormularioContrato(aoSalvar, contratoEditar) {
         const dados = Object.fromEntries(new FormData(e.target).entries());
         dados.qtdPostos = Number(dados.qtdPostos) || 0;
         dados.qtdColaboradores = Number(dados.qtdColaboradores) || 0;
-        if (!contratoEditar) dados.postos = [];
+        if (!contratoEditar) { dados.postos = []; dados.contatos = []; }
         try {
           if (contratoEditar) await atualizar("contratos", contratoEditar.id, dados);
           else await criar("contratos", dados);

@@ -68,7 +68,7 @@ function renderConfiguracoes(view) {
       </div>
       <div class="card">
         <h3>Sobre</h3>
-        <p>Pro Agenda v1.0 — organização pessoal de treinamentos e segurança patrimonial.</p>
+        <p>Central do Inspetor v1.0 — organização pessoal de treinamentos e segurança patrimonial.</p>
       </div>
     </div>
   `;
