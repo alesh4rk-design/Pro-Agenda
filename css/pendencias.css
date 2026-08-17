@@ -1,0 +1,7 @@
+.pendencias-resumo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+@media (max-width: 700px) { .pendencias-resumo { grid-template-columns: repeat(2, 1fr); } }
+.pendencia-item { border-left: 4px solid var(--texto-fraco); }
+.pendencia-item.status-aberta { border-left-color: var(--perigo); }
+.pendencia-item.status-andamento { border-left-color: var(--alerta); }
+.pendencia-item.status-concluida { border-left-color: var(--sucesso); opacity: .75; }
+.pendencia-item .prazo.atrasado { color: var(--perigo); font-weight: 700; }

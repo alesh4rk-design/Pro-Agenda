@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Central do Inspetor</title>
+<meta name="description" content="Central pessoal de organização profissional para Inspetor de Treinamento e Segurança">
+<meta name="theme-color" content="#0f1420">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Inspetor">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/agenda.css">
+<link rel="stylesheet" href="css/contratos.css">
+<link rel="stylesheet" href="css/treinamentos.css">
+<link rel="stylesheet" href="css/documentos.css">
+<link rel="stylesheet" href="css/pendencias.css">
+<link rel="stylesheet" href="css/anotacoes.css">
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<section id="tela-login" class="tela-login">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="login-brand-icon">🛡️</span>
+      <h1>Central do Inspetor</h1>
+      <p>Organização pessoal de treinamentos e segurança patrimonial</p>
+    </div>
+    <form id="form-login" class="form-login">
+      <label>E-mail
+        <input type="email" id="login-email" required autocomplete="username" placeholder="seuemail@exemplo.com">
+      </label>
+      <label>Senha
+        <input type="password" id="login-senha" required autocomplete="current-password" placeholder="••••••••">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+      <button type="button" id="btn-criar-conta" class="btn btn-ghost btn-block">Criar conta</button>
+    </form>
+    <p id="login-erro" class="login-erro" hidden></p>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app" class="app" hidden>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">🛡️</span>
+      <div>
+        <strong>Central do Inspetor</strong>
+        <small id="usuario-email"></small>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#/inicio" data-rota="inicio">🏠 <span>Início</span></a>
+      <a href="#/agenda" data-rota="agenda">📅 <span>Agenda</span></a>
+      <a href="#/contratos" data-rota="contratos">🏢 <span>Contratos</span></a>
+      <a href="#/anotacoes" data-rota="anotacoes">📝 <span>Anotações</span></a>
+      <a href="#/treinamentos" data-rota="treinamentos">📚 <span>Treinamentos</span></a>
+      <a href="#/documentos" data-rota="documentos">📄 <span>Documentos</span></a>
+      <a href="#/pendencias" data-rota="pendencias">⚠️ <span>Pendências</span></a>
+      <a href="#/configuracoes" data-rota="configuracoes">⚙️ <span>Configurações</span></a>
+    </nav>
+    <button id="btn-logout" class="btn btn-ghost btn-block">Sair</button>
+  </aside>
+
+  <main class="conteudo">
+    <header class="topbar">
+      <button id="btn-menu-mobile" class="icon-btn only-mobile" aria-label="Menu">☰</button>
+      <div class="busca-global">
+        <input type="search" id="input-busca-global" placeholder="🔎 Pesquisar contratos, treinamentos, anotações...">
+        <div id="resultados-busca-global" class="resultados-busca" hidden></div>
+      </div>
+      <button id="btn-tema" class="icon-btn" aria-label="Alternar tema">🌙</button>
+    </header>
+
+    <div id="view" class="view"></div>
+  </main>
+
+  <nav class="bottom-nav only-mobile">
+    <a href="#/inicio" data-rota="inicio"><span>🏠</span>Início</a>
+    <a href="#/agenda" data-rota="agenda"><span>📅</span>Agenda</a>
+    <a href="#/contratos" data-rota="contratos"><span>🏢</span>Contratos</a>
+    <a href="#/pendencias" data-rota="pendencias"><span>⚠️</span>Pendências</a>
+    <a href="#/mais" data-rota="mais" id="btn-mais"><span>⋯</span>Mais</a>
+  </nav>
+
+  <button id="fab" class="fab" aria-label="Ação rápida">➕</button>
+  <div id="fab-menu" class="fab-menu" hidden>
+    <button data-acao="nova-visita">📅 Nova visita</button>
+    <button data-acao="nova-anotacao">📝 Nova anotação</button>
+    <button data-acao="nova-pendencia">⚠️ Nova pendência</button>
+    <button data-acao="novo-treinamento">📚 Novo treinamento</button>
+    <button data-acao="novo-documento">📄 Novo documento</button>
+  </div>
+  <div id="fab-overlay" class="fab-overlay" hidden></div>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-root"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

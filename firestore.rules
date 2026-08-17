@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cada usuário só pode ler/escrever dentro do seu próprio espaço:
+    // users/{uid}/(contratos|agenda|anotacoes|treinamentos|documentos|pendencias|visitas)/{docId}
+    match /users/{userId} {
+      match /{colecao}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId
+          && colecao in ['contratos', 'agenda', 'anotacoes', 'treinamentos', 'documentos', 'pendencias', 'visitas'];
+      }
+    }
+
+    // Qualquer outro caminho é negado por padrão.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
