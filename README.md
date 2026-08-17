@@ -59,12 +59,11 @@ users/{uid}/visitas/{id}
 
 ## ✨ Melhorar textos com IA (opcional, gratuito)
 
-Os editores de **Treinamentos** e **Anotações** têm um botão "✨ Melhorar com IA" que envia o texto escrito para o Google Gemini (plano gratuito, sem cartão de crédito) e sugere uma versão revisada — você decide se usa ou não.
+Os editores de **Treinamentos** e **Anotações** têm um botão "✨ Melhorar com IA" que envia o texto escrito para o Google Gemini e sugere uma versão revisada — você decide se usa ou não.
 
-1. Acesse https://aistudio.google.com/apikey e crie uma chave de API gratuita.
-2. No sistema, vá em **⚙️ Configurações > Melhorar textos com IA** e cole a chave.
-3. A chave fica salva em `config/ia` no Firestore — **compartilhada entre todas as contas que logarem no sistema** (qualquer um que entrar já usa a mesma chave, sem precisar cadastrar a própria). Os demais dados (contratos, agenda, anotações etc.) continuam privados por conta.
-4. Ao escrever um treinamento ou anotação, clique em "✨ Melhorar com IA", ajuste a sugestão se quiser e clique em "Usar este texto".
+A chave do Gemini **não fica no app** (nem no Firestore, nem no navegador de quem usa): ela mora só dentro de um pequeno proxy gratuito no Cloudflare Workers, que valida se a pessoa está logada antes de gastar a cota da IA. Veja o passo a passo em [`cloudflare-worker/README.md`](cloudflare-worker/README.md).
+
+Depois de publicar o Worker, cole a URL dele em `js/ia-config.js` (`IA_WORKER_URL`) — a partir daí, qualquer conta que logar no sistema já usa a IA normalmente, sem precisar configurar nada.
 
 ## Próximos passos sugeridos (V2)
 

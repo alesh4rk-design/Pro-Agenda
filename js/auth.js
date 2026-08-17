@@ -20,6 +20,11 @@ export function getUsuario() {
   return usuarioAtual;
 }
 
+export async function getTokenAtual() {
+  if (!usuarioAtual) return null;
+  return usuarioAtual.getIdToken();
+}
+
 export async function entrar(email, senha) {
   await signInWithEmailAndPassword(auth, email, senha);
 }

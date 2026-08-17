@@ -10,8 +10,8 @@ import { renderTreinamentos, abrirFormularioTreinamento } from "./treinamentos.j
 import { renderDocumentos, abrirFormularioDocumento } from "./documentos.js";
 import { renderPendencias, abrirFormularioPendencia } from "./pendencias.js";
 import { buscarGlobal } from "./busca.js";
-import { getChaveIA, salvarChaveIA } from "./ia.js";
 import { mostrarResumoEntrada } from "./notificacoes.js";
+import { IA_WORKER_URL } from "./ia-config.js";
 
 /* ===== Tema ===== */
 const btnTema = document.getElementById("btn-tema");
@@ -36,9 +36,8 @@ registrarRota("pendencias", renderPendencias);
 registrarRota("configuracoes", renderConfiguracoes);
 registrarRota("mais", renderMais);
 
-async function renderConfiguracoes(view) {
+function renderConfiguracoes(view) {
   const user = getUsuario();
-  const chaveAtual = await getChaveIA();
   view.innerHTML = `
     <div class="pagina-header"><div><h1>⚙️ Configurações</h1><p>Preferências pessoais da sua central.</p></div></div>
     <div class="grid grid-cols-2">
@@ -57,15 +56,11 @@ async function renderConfiguracoes(view) {
       </div>
       <div class="card">
         <h3>✨ Melhorar textos com IA</h3>
-        <p>Cole aqui sua chave gratuita do Google Gemini para habilitar o botão "Melhorar com IA" nos editores de Treinamentos e Anotações. A chave fica salva no seu espaço privado do Firestore (só sua conta acessa) e sincroniza entre seus aparelhos.</p>
-        <div class="campo full">
-          <input id="cfg-chave-ia" type="password" placeholder="Cole sua chave da API do Gemini" value="${chaveAtual}">
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" id="cfg-salvar-ia">Salvar chave</button>
-          <button class="btn btn-ghost btn-sm" id="cfg-remover-ia">Remover</button>
-        </div>
-        <p style="margin-top:10px;font-size:12px">Como obter: acesse <strong>aistudio.google.com/apikey</strong>, faça login com sua conta Google e clique em "Create API key". É gratuito, sem cartão de crédito, com cota diária generosa.</p>
+        <p>
+          ${IA_WORKER_URL
+            ? "O botão \"Melhorar com IA\" já está ativo nos editores de Treinamentos e Anotações — configurado de forma central e segura, sem precisar colar chave nenhuma aqui."
+            : "A IA ainda não foi configurada neste sistema. É preciso publicar o servidor de IA (Cloudflare Worker) e colar a URL em js/ia-config.js — veja o guia em cloudflare-worker/README.md."}
+        </p>
       </div>
       <div class="card">
         <h3>Sobre</h3>
@@ -74,15 +69,6 @@ async function renderConfiguracoes(view) {
     </div>
   `;
   view.querySelector("#cfg-logout").onclick = async () => { await sair(); };
-  view.querySelector("#cfg-salvar-ia").onclick = async () => {
-    await salvarChaveIA(view.querySelector("#cfg-chave-ia").value);
-    toast("Chave de IA salva na sua conta.", "sucesso");
-  };
-  view.querySelector("#cfg-remover-ia").onclick = async () => {
-    await salvarChaveIA("");
-    view.querySelector("#cfg-chave-ia").value = "";
-    toast("Chave de IA removida.", "sucesso");
-  };
 }
 
 function renderMais(view) {
