@@ -11,6 +11,7 @@ import { renderDocumentos, abrirFormularioDocumento } from "./documentos.js";
 import { renderPendencias, abrirFormularioPendencia } from "./pendencias.js";
 import { buscarGlobal } from "./busca.js";
 import { getChaveIA, salvarChaveIA } from "./ia.js";
+import { mostrarResumoEntrada } from "./notificacoes.js";
 
 /* ===== Tema ===== */
 const btnTema = document.getElementById("btn-tema");
@@ -213,6 +214,7 @@ aoMudarAuth((user) => {
     appEl.hidden = false;
     document.getElementById("usuario-email").textContent = user.email;
     processarRota();
+    mostrarResumoEntrada();
   } else {
     telaLogin.hidden = false;
     appEl.hidden = true;
