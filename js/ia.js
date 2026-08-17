@@ -1,6 +1,8 @@
 // Integração com Google Gemini (plano gratuito) para melhorar textos de treinamentos e anotações.
-// A chave de API fica salva no Firestore, no espaço privado do usuário (users/{uid}/config/preferencias),
-// protegida pelas mesmas regras que restringem os dados só à própria conta.
+// A chave de API fica salva em um documento compartilhado (config/ia), lido e gravado por
+// qualquer conta autenticada no sistema — assim, todos que logarem usam a mesma chave, sem
+// precisar cadastrar a própria. Os demais dados (contratos, agenda etc.) continuam privados
+// por conta, isso é só a chave da IA.
 import { db, doc, getDoc, setDoc } from "./firebase.js";
 import { getUsuario } from "./auth.js";
 
@@ -8,9 +10,8 @@ const MODELO = "gemini-2.0-flash";
 const CHAVE_STORAGE_LEGADA = "inspetor-gemini-key";
 
 function refPreferencias() {
-  const user = getUsuario();
-  if (!user) throw new Error("Usuário não autenticado.");
-  return doc(db, "users", user.uid, "config", "preferencias");
+  if (!getUsuario()) throw new Error("Usuário não autenticado.");
+  return doc(db, "config", "ia");
 }
 
 export async function getChaveIA() {

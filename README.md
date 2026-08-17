@@ -63,7 +63,7 @@ Os editores de **Treinamentos** e **Anotações** têm um botão "✨ Melhorar c
 
 1. Acesse https://aistudio.google.com/apikey e crie uma chave de API gratuita.
 2. No sistema, vá em **⚙️ Configurações > Melhorar textos com IA** e cole a chave.
-3. A chave fica salva no Firestore, dentro do seu espaço privado (`users/{uid}/config/preferencias`), protegida pelas mesmas regras que isolam seus dados — só sua conta autenticada tem acesso. Sincroniza entre seus aparelhos.
+3. A chave fica salva em `config/ia` no Firestore — **compartilhada entre todas as contas que logarem no sistema** (qualquer um que entrar já usa a mesma chave, sem precisar cadastrar a própria). Os demais dados (contratos, agenda, anotações etc.) continuam privados por conta.
 4. Ao escrever um treinamento ou anotação, clique em "✨ Melhorar com IA", ajuste a sugestão se quiser e clique em "Usar este texto".
 
 ## Próximos passos sugeridos (V2)
