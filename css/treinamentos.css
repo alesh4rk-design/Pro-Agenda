@@ -1,13 +1,17 @@
-.treinamento-card .titulo { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-.treinamento-card .rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
-.treinamento-card .fav { background: none; border: none; font-size: 18px; cursor: pointer; }
+.treinamento-card .titulo { font-weight: 700; font-size: 15px; margin-bottom: 6px; letter-spacing: -.01em; }
+.treinamento-card .rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--borda); }
+.treinamento-card .fav { background: none; border: none; font-size: 18px; cursor: pointer; transition: transform var(--transicao); }
+.treinamento-card .fav:hover { transform: scale(1.15); }
 
 .apresentacao {
   position: fixed; inset: 0; background: var(--bg); z-index: 300;
   display: flex; flex-direction: column; padding: 0;
+  animation: apresentacao-abrir .2s var(--transicao);
 }
+@keyframes apresentacao-abrir { from { opacity: 0; } to { opacity: 1; } }
 .apresentacao-topo { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--borda); }
 .apresentacao-corpo { flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
-.apresentacao-corpo .conteudo-slide { max-width: 720px; font-size: clamp(20px, 4vw, 30px); line-height: 1.5; }
-.apresentacao-corpo .conteudo-slide h3 { font-size: clamp(24px, 5vw, 38px); margin-bottom: 20px; }
-.apresentacao-rodape { display: flex; justify-content: center; gap: 16px; padding: 18px; border-top: 1px solid var(--borda); }
+.apresentacao-corpo .conteudo-slide { max-width: 720px; font-size: clamp(20px, 4vw, 30px); line-height: 1.5; animation: slide-surgir .25s var(--transicao); }
+@keyframes slide-surgir { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.apresentacao-corpo .conteudo-slide h3 { font-size: clamp(24px, 5vw, 38px); margin-bottom: 20px; color: var(--acento); }
+.apresentacao-rodape { display: flex; justify-content: center; align-items: center; gap: 16px; padding: 18px; border-top: 1px solid var(--borda); }

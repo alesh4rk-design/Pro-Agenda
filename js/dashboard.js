@@ -33,16 +33,33 @@ export async function renderInicio(view) {
 
     <div class="dash-resumo">
       <div class="card dash-stat destaque">
-        <span class="rotulo">Próxima visita</span>
-        <span class="valor" style="font-size:16px">${proxima ? `${formatarData(proxima.data)} · ${proxima.horario || ""}` : "Nenhuma"}</span>
+        <div class="stat-topo"><span class="rotulo">Próxima visita</span><span class="stat-icone">📅</span></div>
+        <span class="valor" style="font-size:1.1rem">${proxima ? `${formatarData(proxima.data)} · ${proxima.horario || ""}` : "Nenhuma"}</span>
       </div>
-      <div class="card dash-stat"><span class="valor">${contratos.length}</span><span class="rotulo">Contratos</span></div>
-      <div class="card dash-stat"><span class="valor">${futuros.length}</span><span class="rotulo">Visitas agendadas</span></div>
-      <div class="card dash-stat ${atrasadas.length ? "alerta" : ""}"><span class="valor">${abertas.length}</span><span class="rotulo">Pendências abertas</span></div>
-      <div class="card dash-stat alerta"><span class="valor">${atrasadas.length}</span><span class="rotulo">Pendências atrasadas</span></div>
-      <div class="card dash-stat"><span class="valor">${treinamentos.length}</span><span class="rotulo">Treinamentos</span></div>
-      <div class="card dash-stat"><span class="valor">${documentos.length}</span><span class="rotulo">Documentos</span></div>
-      <div class="card dash-stat"><span class="valor">${contratos.length}</span><span class="rotulo">Postos acompanhados</span></div>
+      <div class="card dash-stat">
+        <div class="stat-topo"><span class="rotulo">Contratos</span><span class="stat-icone">🏢</span></div>
+        <span class="valor">${contratos.length}</span>
+      </div>
+      <div class="card dash-stat">
+        <div class="stat-topo"><span class="rotulo">Visitas agendadas</span><span class="stat-icone">🗓️</span></div>
+        <span class="valor">${futuros.length}</span>
+      </div>
+      <div class="card dash-stat ${atrasadas.length ? "alerta" : ""}">
+        <div class="stat-topo"><span class="rotulo">Pendências abertas</span><span class="stat-icone">⚠️</span></div>
+        <span class="valor">${abertas.length}</span>
+      </div>
+      <div class="card dash-stat alerta">
+        <div class="stat-topo"><span class="rotulo">Pendências atrasadas</span><span class="stat-icone">🔴</span></div>
+        <span class="valor">${atrasadas.length}</span>
+      </div>
+      <div class="card dash-stat">
+        <div class="stat-topo"><span class="rotulo">Treinamentos</span><span class="stat-icone">📚</span></div>
+        <span class="valor">${treinamentos.length}</span>
+      </div>
+      <div class="card dash-stat">
+        <div class="stat-topo"><span class="rotulo">Documentos</span><span class="stat-icone">📄</span></div>
+        <span class="valor">${documentos.length}</span>
+      </div>
     </div>
 
     <h3>Ações rápidas</h3>

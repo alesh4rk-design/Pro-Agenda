@@ -1,2 +1,5 @@
-.documento-card .icone-cat { font-size: 22px; margin-bottom: 8px; display: block; }
-.documento-card .nome { font-weight: 700; margin-bottom: 4px; }
+.documento-card .icone-cat {
+  font-size: 19px; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 10px; background: var(--info-suave); margin-bottom: 12px;
+}
+.documento-card .nome { font-weight: 700; margin-bottom: 4px; letter-spacing: -.01em; }

@@ -1,2 +1,2 @@
-.anotacao-card .titulo { font-weight: 700; margin-bottom: 4px; }
-.anotacao-card .texto-preview { font-size: 12.5px; color: var(--texto-suave); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px; }
+.anotacao-card .titulo { font-weight: 700; margin-bottom: 4px; letter-spacing: -.01em; }
+.anotacao-card .texto-preview { font-size: 12.5px; color: var(--texto-suave); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; line-height: 1.5; }

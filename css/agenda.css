@@ -1,23 +1,30 @@
 .agenda-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .agenda-views { display: flex; gap: 4px; background: var(--bg-card); border: 1px solid var(--borda); border-radius: 10px; padding: 4px; }
-.agenda-views button { border: none; background: none; padding: 7px 12px; border-radius: 8px; font-size: 12.5px; color: var(--texto-suave); cursor: pointer; }
+.agenda-views button { border: none; background: none; padding: 7px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--texto-suave); cursor: pointer; transition: background var(--transicao), color var(--transicao); }
 .agenda-views button.ativa { background: var(--marca); color: #fff; }
-.agenda-nav-data { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.agenda-nav-data { display: flex; align-items: center; gap: 10px; font-weight: 650; }
 
 .mes-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.mes-dia-cabecalho { text-align: center; font-size: 11px; color: var(--texto-fraco); padding: 6px 0; }
+.mes-dia-cabecalho { text-align: center; font-size: 11px; font-weight: 650; color: var(--texto-fraco); padding: 6px 0; }
 .mes-dia {
-  min-height: 78px; border: 1px solid var(--borda); border-radius: 8px; padding: 6px;
+  min-height: 78px; border: 1px solid var(--borda); border-radius: 9px; padding: 6px;
   font-size: 11.5px; background: var(--bg-card); cursor: pointer;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
 }
+.mes-dia:hover { border-color: var(--borda-forte); }
 .mes-dia.fora { opacity: .35; }
-.mes-dia.hoje { border-color: var(--marca-clara); box-shadow: inset 0 0 0 1px var(--marca-clara); }
-.mes-dia .num { font-weight: 700; margin-bottom: 4px; }
+.mes-dia.hoje { border-color: var(--marca-clara); box-shadow: inset 0 0 0 1px var(--marca-clara); background: var(--info-suave); }
+.mes-dia .num { font-weight: 700; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
 .mes-dia .evento-chip { background: var(--marca); color: #fff; border-radius: 4px; padding: 1px 4px; margin-bottom: 2px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 700px) { .mes-grid { grid-template-columns: repeat(7, minmax(34px,1fr)); } .mes-dia { min-height: 46px; padding: 3px; font-size: 10px; } .mes-dia .evento-chip { display: none; } .mes-dia.tem-evento .num::after { content: '•'; color: var(--acento); margin-left: 3px; } }
 
 .dia-lista, .semana-lista { display: flex; flex-direction: column; gap: 10px; }
-.evento-item { display: flex; gap: 12px; align-items: flex-start; background: var(--bg-card); border: 1px solid var(--borda); border-left: 4px solid var(--marca-clara); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
-.evento-item .hora { font-weight: 700; font-size: 13px; min-width: 52px; }
+.evento-item {
+  display: flex; gap: 12px; align-items: flex-start; background: var(--bg-card); border: 1px solid var(--borda);
+  border-left: 4px solid var(--marca-clara); border-radius: 10px; padding: 12px 14px; cursor: pointer;
+  transition: transform var(--transicao), box-shadow var(--transicao), border-color var(--transicao);
+}
+.evento-item:hover { transform: translateX(2px); box-shadow: var(--sombra); border-color: var(--marca-clara); }
+.evento-item .hora { font-weight: 700; font-size: 13px; min-width: 52px; font-variant-numeric: tabular-nums; }
 .evento-item.prioridade-alta { border-left-color: var(--alerta); }
 .evento-item.prioridade-urgente { border-left-color: var(--perigo); }
