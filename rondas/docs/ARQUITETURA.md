@@ -14,10 +14,11 @@ rondas e plano de implementação.
   onde o sistema for usado: login simples (ex.: `portaria-jardim`) e senha definidos por ele.
   Esse login é usado pela equipe do posto, no celular ou tablet do posto. Ele pode trocar a senha
   a qualquer momento, e a troca derruba as sessões abertas, por exemplo quando alguém deixa o posto.
-- **Vigilantes não têm login.** Ficam em um cadastro simples (`vigilantes`, sem credenciais). Na
-  execução da ronda, o acesso do posto informa quem está de plantão. Essa identificação é
-  **declarada** (não autenticada), e os relatórios a apresentam assim. A prova operacional continua
-  sendo o acesso do posto + QR + horário do servidor + GPS.
+- **Vigilantes não têm login nem cadastro.** Cada ronda, leitura de QR e ocorrência fica
+  registrada em nome do **acesso do posto**. Os relatórios mostram a execução por posto e por
+  horário, sem identificar o vigilante. A prova operacional é o acesso do posto + QR + horário do
+  servidor + GPS. (O filtro "vigilante" previsto originalmente nos relatórios vira filtro por
+  posto/acesso.)
 - **Supervisores e fiscais** têm acesso individual por e-mail (opcional para a empresa).
 
 Por que o acesso do posto usa um "e-mail sintético": o Firebase Authentication exige e-mail para o
@@ -84,13 +85,12 @@ implementa contadores de consumo (`usage/{data}`) e alertas ao atingir 70%/90% d
 | `contracts/{id}` | contrato (`companyId`) | admin geral; admin da empresa; supervisor vinculado ao contrato | Worker |
 | `posts/{id}` | posto (`companyId`, `contractId`, fuso, regra de virada) | admin geral; admin da empresa; supervisor ou acesso do posto vinculado | Worker |
 | `users/{uid}` | contas com login: admins, supervisores e acessos de posto (`login`) | o próprio; admin geral; admin da empresa; supervisor (só acessos de posto) | Worker |
-| `vigilantes/{id}` | vigilantes **sem login** (nome, matrícula, postos) | admins; supervisor e acesso do posto que compartilham um posto | Worker |
 | `checkpoints/{id}` | ponto de ronda (sem o segredo do QR) | escopo do posto | Worker |
 | `checkpointSecrets/{id}` | hash do token do QR | **ninguém** (só backend) | Worker |
 | `checklists/{id}` + `/versions/{n}` | checklist e versões imutáveis | admins; escopo do posto | Worker |
 | `schedules/{id}` + `/versions/{n}` | programação versionada por vigência | escopo do posto | Worker |
 | `rounds/{postId_yyyyMMddHHmm}` | ronda prevista (ID determinístico) | escopo do posto | Worker (cron e execução) |
-| `scans/{uuid}` | leitura de QR (UUID gerado no aparelho), com `vigilanteId` declarado | admins; supervisor do posto; acesso do próprio posto | Worker |
+| `scans/{uuid}` | leitura de QR (UUID gerado no aparelho), atribuída ao acesso do posto | admins; supervisor do posto; acesso do próprio posto | Worker |
 | `photos/{id}` | metadados da foto (arquivo no R2) | admins; supervisor do posto; autor | Worker |
 | `justifications/{id}` | justificativas (não apagam a falha) | escopo do posto | Worker |
 | `incidents/{id}` | ocorrências | escopo do posto | Worker |
@@ -248,10 +248,10 @@ referência 60 min · segunda a sexta.
 | Etapa | Entrega | Status |
 |---|---|---|
 | 1 | Arquitetura, modelo de dados, autenticação, RBAC, regras, auditoria, idempotência, PWA base, telas de login/recuperação/usuários/auditoria/configuração | **Concluída** — ver [ETAPA-1.md](ETAPA-1.md) |
-| 2 | CRUD de empresas, contratos, postos e cadastro de vigilantes (sem login) | Próxima |
+| 2 | CRUD de empresas, contratos e postos | Próxima |
 | 3 | Pontos de ronda, QR (token + hash, impressão), checklists versionados | |
 | 4 | Gerador de programação (modelos A–D), prévia com conflitos, cron idempotente, virada de dia | |
-| 5 | App do posto: identificação do vigilante de plantão, leitor de QR, GPS com política, checklist, fotos comprimidas → R2, fila offline | |
+| 5 | App do posto: leitor de QR, GPS com política, checklist, fotos comprimidas → R2, fila offline | |
 | 6 | Cron de status, atrasos, não execução, justificativas | |
 | 7 | Relatórios (PDF/CSV), índice bruto/ajustado, mapa (Leaflet + OpenStreetMap) e calor, alertas | |
 | 8 | Retenção automática de fotos, contadores de consumo, rate limit global, backup/exportação, testes de segurança | |

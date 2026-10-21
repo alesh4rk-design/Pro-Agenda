@@ -12,8 +12,8 @@
 - Verificação do ID token do Firebase (assinatura RS256 via JWKS do Google, emissor, público, validade).
 - Montagem do usuário a partir de `users/{uid}` + empresa; nega conta inativa, empresa inativa e claims divergentes.
 - Perfis: administrador geral, administrador da empresa, supervisor/fiscal e **acesso do posto**
-  (login + senha definidos pelo administrador da empresa, um por posto). Vigilantes não têm login;
-  o modelo `vigilantes` (sem credenciais) já está definido e o cadastro entra na Etapa 2.
+  (login + senha definidos pelo administrador da empresa, um por posto). Vigilantes não têm login nem
+  cadastro: as rondas ficam registradas em nome do acesso do posto.
 - Rotas:
   - `GET /v1/health`
   - `GET /v1/me` — perfil, permissões efetivas, perfis atribuíveis.
@@ -48,7 +48,7 @@
 |---|---|---|
 | Permissões e validação (unitário) | `npm test` (packages/shared) | 24 testes ✔ |
 | API do Worker com dublês (unitário) | `npm test` (apps/worker) | 45 testes ✔ |
-| Regras do Firestore no emulador | `npm run test:rules` | 19 testes ✔ (verificado por mutação: enfraquecer as regras faz os testes falharem) |
+| Regras do Firestore no emulador | `npm run test:rules` | 18 testes ✔ (verificado por mutação: enfraquecer as regras faz os testes falharem) |
 | Worker real × emuladores Auth + Firestore | `npm run test:integration` | 6 testes ✔ |
 | Navegador (Playwright, 390×844) contra Worker local + emuladores | manual, roteiro abaixo | ✔ |
 
@@ -79,7 +79,7 @@ npm run dev:web              # terminal 3 → http://localhost:5173
 
 Usuários de demonstração (senha `demo-123456`): `admin@demo.local`, `empresa@demo.local`,
 `supervisor@demo.local`, `outra@demo.local` e os acessos de posto `portaria-demo` e `garagem-demo`
-(digite só o login). Vigilantes de demonstração (sem login): "Vigilante Um" e "Vigilante Dois".
+(digite só o login).
 
 1. Entre com senha errada → "E-mail ou senha incorretos."
 2. Entre como `admin@demo.local` → painel com Usuários, Auditoria e Sistema.
@@ -98,6 +98,5 @@ Usuários de demonstração (senha `demo-123456`): `admin@demo.local`, `empresa@
 - O e‑mail de "definir senha" usa o modelo padrão de redefinição do Firebase; personalize o texto em Authentication → Modelos.
 - O acesso do posto usa e-mail sintético `login@postos.invalid`. O emulador do Auth aceita esse formato (testado); confirme no primeiro acesso em produção. Se o Firebase recusar, basta trocar `POSTO_LOGIN_DOMAIN` por um subdomínio seu sem caixa de e-mail.
 - Login é único em todo o sistema (entre todas as empresas). Se dois clientes quiserem `portaria`, o segundo recebe "login já em uso". Sugestão: prefixar com a sigla da empresa.
-- A identificação do vigilante de plantão (Etapa 5) é declarada pelo posto e não comprova quem estava presente.
 - Bundle do frontend ~300 KB gzip (SDK do Firebase); otimização (code splitting) na Etapa 8.
 - `idempotency/*` tem `expiresAt`; configure a política de TTL do Firestore nesse campo (ou a limpeza da Etapa 8).

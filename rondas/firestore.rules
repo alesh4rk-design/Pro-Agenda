@@ -134,14 +134,6 @@ service cloud.firestore {
     // Leituras de QR: escopo do posto (o acesso do posto vê as leituras do próprio posto).
     match /scans/{id} { allow read: if canSeePostDoc(resource.data); }
 
-    // Vigilantes (cadastro sem login): admins; supervisor e acesso do posto que compartilham um posto.
-    match /vigilantes/{id} {
-      allow read: if isAdminGeral()
-        || isCompanyAdmin(resource.data.companyId)
-        || (memberOf(resource.data.companyId) && claimRole() in ['posto', 'supervisor']
-            && resource.data.get('postIds', []).hasAny(me().get('postIds', [])));
-    }
-
     match /photos/{id} {
       // Metadados apenas; o arquivo no R2 é servido pelo Worker com URL temporária.
       allow read: if isAdminGeral()

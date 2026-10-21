@@ -11,8 +11,8 @@
  *
  * "posto" é o acesso compartilhado de um posto de serviço: o administrador da
  * empresa cliente cria um login por posto e o entrega à equipe daquele posto.
- * Vigilantes não têm login próprio; são cadastrados sem credenciais
- * (coleção `vigilantes`) e identificados na execução da ronda.
+ * Vigilantes não têm login nem cadastro: as rondas são registradas em nome
+ * do acesso do posto.
  */
 export const ROLES = ["admin_geral", "admin_empresa", "supervisor", "posto"] as const;
 export type Role = (typeof ROLES)[number];

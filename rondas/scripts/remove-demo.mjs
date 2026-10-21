@@ -25,7 +25,7 @@ initializeApp(values.project ? { projectId: values.project, credential: applicat
 const db = getFirestore();
 const auth = getAuth();
 
-const collections = ["companies", "contracts", "posts", "users", "vigilantes", "checkpoints", "checklists", "schedules", "rounds", "scans", "incidents", "alerts", "photos"];
+const collections = ["companies", "contracts", "posts", "users", "checkpoints", "checklists", "schedules", "rounds", "scans", "incidents", "alerts", "photos"];
 let total = 0;
 for (const c of collections) {
   const snap = await db.collection(c).where("demo", "==", true).get();

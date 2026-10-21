@@ -6,8 +6,7 @@
  * Uso: com `npm run emulators` rodando em outro terminal:
  *   npm run seed:emulator
  *
- * Etapa 1: plataforma, empresa, contrato, postos, acessos (um por posto),
- * supervisor e vigilantes sem login.
+ * Etapa 1: plataforma, empresa, contrato, postos, acessos (um por posto) e supervisor.
  * Pontos de ronda, checklists, programação, rondas e ocorrências serão
  * adicionados a este script nas etapas correspondentes.
  */
@@ -121,13 +120,4 @@ for (const u of usuarios) {
   console.log(`${u.role.padEnd(14)} ${u.login ?? u.email}`);
 }
 
-// Vigilantes: cadastro sem login (identificados pelo acesso do posto na execução da ronda).
-const vigilantes = [
-  { id: "demo-vig-1", nome: "Vigilante Um (DEMO)", matricula: "D-001", postIds: ["demo-posto"] },
-  { id: "demo-vig-2", nome: "Vigilante Dois (DEMO)", matricula: "D-002", postIds: ["demo-posto", "demo-posto-garagem"] },
-];
-for (const v of vigilantes) {
-  await db.doc(`vigilantes/${v.id}`).set({ ...v, companyId: "demo-empresa", status: "ativo", ...audit });
-}
-console.log(`vigilantes     ${vigilantes.length} cadastrados sem login`);
 console.log(`\nSenha de todos os acessos de demonstração: ${SENHA}`);

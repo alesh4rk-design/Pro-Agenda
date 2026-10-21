@@ -360,7 +360,7 @@ function NovoAcesso({
             <input type="text" autoComplete="new-password" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} minLength={8} required />
           </label>
           <p className="muted small">
-            A equipe do posto entra com este login e senha. Vigilantes não precisam de login próprio. Você pode trocar
+            A equipe do posto entra com este login e senha. Vigilantes não precisam de login: as rondas ficam registradas em nome do posto. Você pode trocar
             a senha a qualquer momento (por exemplo, quando alguém deixar o posto).
           </p>
         </>

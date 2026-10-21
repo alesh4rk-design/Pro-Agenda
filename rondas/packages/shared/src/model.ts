@@ -84,20 +84,6 @@ export interface AuditLog {
 
 // ---------------------------------------------------------------- Etapa 2
 
-/**
- * vigilantes/{id} — cadastro de vigilantes SEM login. Na execução, o acesso do
- * posto informa quem está de plantão; os relatórios por vigilante usam esse dado.
- * É uma identificação declarada (não autenticada), e os relatórios a apresentam assim.
- */
-export interface Vigilante extends Audited {
-  id: string;
-  companyId: string;
-  nome: string;
-  matricula?: string;
-  postIds: string[];
-  status: "ativo" | "inativo";
-}
-
 /** companies/{id} */
 export interface Company extends Audited {
   id: string;
@@ -282,8 +268,8 @@ export interface PlannedRound {
   justificativaId: string | null;
   startedAt: Ts | null;
   completedAt: Ts | null;
+  /** Acesso do posto que executou (rondas são atribuídas ao posto, não a um vigilante). */
   executorUid: string | null;
-  vigilanteId: string | null;
 }
 
 // ---------------------------------------------------------------- Etapa 5
@@ -298,8 +284,6 @@ export interface Scan {
   checkpointId: string;
   /** Conta que fez a leitura (acesso do posto). */
   userId: string;
-  /** Vigilante de plantão informado pelo acesso do posto (declarado). */
-  vigilanteId: string | null;
   serverReceivedAt: Ts;
   deviceReportedAt: Ts;
   coletadoOffline: boolean;
@@ -352,7 +336,6 @@ export interface Incident extends Audited {
   postId: string;
   ocorridaEm: Ts;
   registradoPorUid: string;
-  vigilanteId: string | null;
   categoria: string;
   descricao: string;
   gravidade: IncidentSeverity;

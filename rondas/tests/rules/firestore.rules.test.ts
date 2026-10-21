@@ -41,9 +41,6 @@ beforeEach(async () => {
     await set("checkpointSecrets/kA", { tokenHash: "abc" });
     await set("scans/sPostoA", { companyId: "empA", contractId: "cA", postId: "pA", userId: "postoA" });
     await set("scans/sPostoA2", { companyId: "empA", contractId: "cA2", postId: "pA2", userId: "postoA2" });
-    await set("vigilantes/jose", { companyId: "empA", nome: "José", postIds: ["pA"] });
-    await set("vigilantes/maria", { companyId: "empA", nome: "Maria", postIds: ["pA2"] });
-    await set("vigilantes/joao", { companyId: "empB", nome: "João", postIds: ["pB"] });
     await set("auditLogs/l1", { companyId: "empA", action: "x" });
     await set("idempotency/x", { a: 1 });
     const u = (uid: string, role: string, companyId: string | null, extra = {}) =>
@@ -118,14 +115,6 @@ describe("acesso por perfil e escopo de posto", () => {
   it("acesso do posto lê as leituras de QR do próprio posto, não de outro", async () => {
     await assertSucceeds(getDoc(doc(postoA(), "scans/sPostoA")));
     await assertFails(getDoc(doc(postoA(), "scans/sPostoA2")));
-  });
-
-  it("acesso do posto lista os vigilantes do próprio posto (para identificar o plantão)", async () => {
-    await assertSucceeds(getDoc(doc(postoA(), "vigilantes/jose")));
-    await assertFails(getDoc(doc(postoA(), "vigilantes/maria")));
-    await assertFails(getDoc(doc(postoA(), "vigilantes/joao")));
-    await assertSucceeds(getDocs(query(collection(postoA(), "vigilantes"), where("companyId", "==", "empA"), where("postIds", "array-contains", "pA"))));
-    await assertFails(getDocs(query(collection(admB(), "vigilantes"), where("companyId", "==", "empA"))));
   });
 
   it("supervisor vê postos do contrato vinculado, não os demais", async () => {
