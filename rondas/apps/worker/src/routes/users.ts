@@ -5,7 +5,10 @@ import {
   canManageUser,
   createUserSchema,
   formatZodError,
+  hasPermission,
   isRole,
+  postoLoginToEmail,
+  resetPostoPasswordSchema,
   updateUserSchema,
   userShapeIssues,
 } from "@rondas/shared";
@@ -60,15 +63,21 @@ export async function createUser(ctx: Ctx): Promise<Response> {
   await requireActiveCompany(deps, input.companyId);
   await validateAssignments(deps, input.companyId, input.postIds, input.contractIds);
 
-  if (await deps.identity.findUidByEmail(input.email)) {
-    throw new ApiError(409, "EMAIL_EM_USO", "Já existe um usuário com este e-mail.");
+  const isPosto = input.role === "posto";
+  // Acesso do posto entra por login; o Auth recebe um e-mail sintético que nunca recebe mensagens.
+  const email = isPosto ? postoLoginToEmail(input.login!) : input.email!;
+  if (await deps.identity.findUidByEmail(email)) {
+    throw isPosto
+      ? new ApiError(409, "LOGIN_EM_USO", "Este login já está em uso. Escolha outro.")
+      : new ApiError(409, "EMAIL_EM_USO", "Já existe um usuário com este e-mail.");
   }
 
   const now = deps.now();
-  const uid = await deps.identity.createUser({ email: input.email, displayName: input.nome });
+  const uid = await deps.identity.createUser({ email, displayName: input.nome, password: isPosto ? input.senha : undefined });
   const profile: DocData = {
     uid,
-    email: input.email,
+    email,
+    login: isPosto ? input.login! : null,
     nome: input.nome,
     role: input.role,
     funcao: input.role === "supervisor" ? (input.funcao ?? "supervisor") : null,
@@ -83,7 +92,8 @@ export async function createUser(ctx: Ctx): Promise<Response> {
     updatedAt: now,
     updatedBy: actor.uid,
   };
-  const body = { uid, email: input.email, role: input.role, companyId: input.companyId };
+  // A senha nunca é gravada no Firestore, na auditoria nem na resposta guardada para idempotência.
+  const body = { uid, email: isPosto ? null : email, login: profile.login, role: input.role, companyId: input.companyId };
 
   try {
     await deps.identity.setClaims(uid, claimsFor(input.role, input.companyId));
@@ -94,7 +104,7 @@ export async function createUser(ctx: Ctx): Promise<Response> {
         targetType: "user",
         targetId: uid,
         companyId: input.companyId,
-        after: { email: input.email, nome: input.nome, role: input.role, companyId: input.companyId, postIds: input.postIds, contractIds: input.contractIds },
+        after: { email: isPosto ? null : email, login: profile.login, nome: input.nome, role: input.role, companyId: input.companyId, postIds: input.postIds, contractIds: input.contractIds },
       }),
       idempotencyWrite(actor.uid, key!, route, 201, body, now),
     ]);
@@ -125,6 +135,10 @@ export async function updateUser(ctx: Ctx): Promise<Response> {
   }
   if (uid === actor.uid && (patch.role !== undefined || patch.status !== undefined)) {
     throw new ApiError(403, "AUTO_ALTERACAO", "Você não pode alterar o próprio perfil ou status.");
+  }
+  // Acesso do posto (login + senha) e contas por e-mail têm credenciais diferentes: não se convertem.
+  if (patch.role !== undefined && patch.role !== current.role && (patch.role === "posto" || current.role === "posto")) {
+    throw new ApiError(400, "PERFIL_INCOMPATIVEL", "Acesso do posto não pode ser convertido em outro perfil (nem o contrário). Crie um novo acesso.");
   }
 
   const next = {
@@ -175,4 +189,42 @@ export async function updateUser(ctx: Ctx): Promise<Response> {
   // Postos/contratos não ficam nas claims: regras e backend leem users/{uid} a cada acesso,
   // então a mudança de escopo vale imediatamente, sem novo login.
   return json({ uid, alterado: true, campos: d.changed });
+}
+
+/**
+ * POST /v1/users/:uid/senha — o administrador define nova senha para o acesso do posto
+ * (o posto não tem e-mail para recuperação). Encerra as sessões abertas com a senha antiga.
+ */
+export async function resetPostoPassword(ctx: Ctx): Promise<Response> {
+  const { actor, deps } = ctx;
+  const uid = ctx.params.uid!;
+  if (!hasPermission(actor, "usuario.gerir")) throw new ApiError(403, "SEM_PERMISSAO", "Você não pode alterar acessos.");
+  const parsed = resetPostoPasswordSchema.safeParse(await readJson(ctx.request));
+  if (!parsed.success) throw new ApiError(400, "DADOS_INVALIDOS", "Dados inválidos.", formatZodError(parsed.error));
+
+  const current = await deps.db.getDoc(`users/${uid}`);
+  const companyId = (current?.companyId as string | null | undefined) ?? null;
+  if (!current || !companyId || !canAccessScope(actor, { companyId })) {
+    throw new ApiError(404, "USUARIO_NAO_ENCONTRADO", "Usuário não encontrado.");
+  }
+  if (current.role !== "posto") {
+    throw new ApiError(400, "PERFIL_INCOMPATIVEL", "Somente o acesso do posto tem senha definida pelo administrador. Use “Esqueci minha senha”.");
+  }
+  if (!canManageUser(actor, { role: "posto", companyId })) {
+    throw new ApiError(403, "SEM_PERMISSAO", "Você não pode alterar este acesso.");
+  }
+
+  await deps.identity.setPassword(uid, parsed.data.senha);
+  await deps.identity.revokeSessions(uid);
+  const now = deps.now();
+  await deps.db.commit([
+    auditWrite(deps.newId(), now, actor, ctx.requestId, {
+      action: "usuario.senha_redefinida",
+      targetType: "user",
+      targetId: uid,
+      companyId,
+      motivo: parsed.data.motivo,
+    }),
+  ]);
+  return json({ uid, senhaRedefinida: true });
 }

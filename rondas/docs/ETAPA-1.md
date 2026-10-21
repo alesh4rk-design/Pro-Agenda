@@ -11,12 +11,16 @@
 **Backend (`apps/worker`, Cloudflare Worker)**
 - Verificação do ID token do Firebase (assinatura RS256 via JWKS do Google, emissor, público, validade).
 - Montagem do usuário a partir de `users/{uid}` + empresa; nega conta inativa, empresa inativa e claims divergentes.
+- Perfis: administrador geral, administrador da empresa, supervisor/fiscal e **acesso do posto**
+  (login + senha definidos pelo administrador da empresa, um por posto). Vigilantes não têm login;
+  o modelo `vigilantes` (sem credenciais) já está definido e o cadastro entra na Etapa 2.
 - Rotas:
   - `GET /v1/health`
   - `GET /v1/me` — perfil, permissões efetivas, perfis atribuíveis.
   - `PUT /v1/config/sistema` — nome do sistema (admin geral).
   - `POST /v1/users` — cadastro: conta no Auth + claims + perfil + auditoria + idempotência, com compensação se o commit falhar.
   - `PATCH /v1/users/:uid` — nome, perfil, função, vínculos, status (bloqueio desativa a conta e revoga sessões).
+  - `POST /v1/users/:uid/senha` — nova senha do acesso do posto (encerra sessões; auditoria sem a senha).
 - Auditoria gravada no **mesmo commit** da alteração (somente campos alterados, antes/depois, motivo).
 - `Idempotency-Key` obrigatória em criações; repetição devolve a mesma resposta.
 - Limite de corpo (32 KB), exigência de JSON, CORS por lista de origens, limite de taxa por usuário (best effort por isolate), erros padronizados com `requestId`.
@@ -26,7 +30,7 @@
 - Nenhuma escrita de cliente. Leituras isoladas por empresa e por posto/contrato. Claims conferidas contra `users/{uid}`. Coleções internas (`checkpointSecrets`, `idempotency`, `usage`) inacessíveis.
 
 **Frontend (`apps/web`, React + TypeScript + PWA)**
-- Telas: Login, Recuperação de senha, Painel (por perfil), Usuários (lista paginada, cadastro, bloqueio/reativação), Auditoria (admin geral), Configurações do sistema (nome).
+- Telas: Login (login do posto ou e-mail), Recuperação de senha, Painel (por perfil), Acessos (lista paginada; criação de acesso do posto com login sugerido a partir do nome do posto; nova senha; bloqueio/reativação), Auditoria (admin geral), Configurações do sistema (nome).
 - Nome do sistema configurável (com cache local para abrir offline).
 - Indicador online/offline e aviso de que alterações não são enviadas sem conexão.
 - Menu mostra só telas implementadas e permitidas; guarda de rota (conveniência — segurança está no backend).
@@ -42,18 +46,18 @@
 
 | Suíte | Comando | Resultado |
 |---|---|---|
-| Permissões e validação (unitário) | `npm test` (packages/shared) | 21 testes ✔ |
-| API do Worker com dublês (unitário) | `npm test` (apps/worker) | 38 testes ✔ |
-| Regras do Firestore no emulador | `npm run test:rules` | 18 testes ✔ (verificado por mutação: enfraquecer as regras faz os testes falharem) |
-| Worker real × emuladores Auth + Firestore | `npm run test:integration` | 5 testes ✔ |
+| Permissões e validação (unitário) | `npm test` (packages/shared) | 24 testes ✔ |
+| API do Worker com dublês (unitário) | `npm test` (apps/worker) | 45 testes ✔ |
+| Regras do Firestore no emulador | `npm run test:rules` | 19 testes ✔ (verificado por mutação: enfraquecer as regras faz os testes falharem) |
+| Worker real × emuladores Auth + Firestore | `npm run test:integration` | 6 testes ✔ |
 | Navegador (Playwright, 390×844) contra Worker local + emuladores | manual, roteiro abaixo | ✔ |
 
 Cobertura dos testes obrigatórios da seção 22 que pertencem a esta etapa:
 
 - **Isolamento entre empresas** — regras (IDs de outra empresa, consultas sem filtro, `cid` forjado) e Worker (cadastro/edição em outra empresa, vínculo com posto alheio, usuário de outra empresa responde 404).
-- **Acesso por perfil** — matriz de permissões, rotas proibidas para supervisor/vigilante, escopo de posto/contrato nas regras.
+- **Acesso por perfil** — matriz de permissões, rotas proibidas para supervisor e acesso do posto, escopo de posto/contrato nas regras.
 - **Permissões administrativas** — admin da empresa não cria/edita administradores, ninguém altera o próprio perfil/status, clientes não escrevem nada.
-- **Recuperação de senha** — fluxo completo no emulador (envio do código, redefinição, novo login).
+- **Recuperação de senha** — e-mail: fluxo completo no emulador (código, redefinição, novo login). Acesso do posto: redefinição pelo administrador; a senha antiga deixa de funcionar e as sessões são encerradas.
 - **Duplicação de requisições** — mesma `Idempotency-Key` não cria segundo usuário nem segunda auditoria.
 - **Falha e retomada de conexão** — interface indica offline; operação não é enviada nem dada como concluída.
 
@@ -74,22 +78,26 @@ npm run dev:web              # terminal 3 → http://localhost:5173
 ```
 
 Usuários de demonstração (senha `demo-123456`): `admin@demo.local`, `empresa@demo.local`,
-`supervisor@demo.local`, `vigilante1@demo.local`, `vigilante2@demo.local`, `outra@demo.local`.
+`supervisor@demo.local`, `outra@demo.local` e os acessos de posto `portaria-demo` e `garagem-demo`
+(digite só o login). Vigilantes de demonstração (sem login): "Vigilante Um" e "Vigilante Dois".
 
 1. Entre com senha errada → "E-mail ou senha incorretos."
 2. Entre como `admin@demo.local` → painel com Usuários, Auditoria e Sistema.
 3. Sistema → altere o nome → título e tela de login mudam; Auditoria registra `sistema.configurar`.
-4. Usuários → empresa "Vigilância Exemplo" → Novo usuário (vigilante, Portaria Principal) → mensagem de e‑mail de senha enviado (no emulador, o link aparece no terminal dos emuladores).
-5. Bloqueie o usuário criado → status "bloqueado"; Auditoria registra `usuario.status.bloqueado` com o motivo.
-6. Saia e entre como `vigilante1@demo.local` → só Painel e o posto vinculado; acessar `/usuarios` volta ao painel.
-7. Entre como `empresa@demo.local` → só vê usuários da própria empresa; perfis atribuíveis: supervisor/fiscal e vigilante.
-8. Desligue a rede (DevTools → Offline) → faixa "Sem conexão".
+4. Saia e entre como `empresa@demo.local` (administrador da empresa cliente) → Acessos → **+ Novo acesso** → tipo "Acesso do posto" → escolha o posto (nome e login são sugeridos) → defina a senha → "Acesso criado".
+5. No card de `garagem-demo` → **Nova senha** → salve. A senha antiga deixa de funcionar.
+6. Bloqueie um acesso → status "bloqueado"; Auditoria (como admin geral) registra `usuario.status.bloqueado` com o motivo.
+7. Saia e entre digitando só `portaria-demo` e a senha → painel do posto; acessar `/usuarios` volta ao painel.
+8. O admin da empresa só vê acessos da própria empresa e só pode criar "Supervisor / fiscal" e "Acesso do posto".
+9. Desligue a rede (DevTools → Offline) → faixa "Sem conexão".
 
 ## Limitações conhecidas (registradas, não escondidas)
 
 - **Verificação de token em produção** (JWKS do Google) e **token OAuth da conta de serviço** só podem ser testados com um projeto Firebase real; nos testes automáticos foram exercitados o verificador do emulador e os clientes REST contra os emuladores.
 - Limite de taxa é por isolate do Worker (não global). Limite global: Etapa 8 (binding de Rate Limiting).
 - O e‑mail de "definir senha" usa o modelo padrão de redefinição do Firebase; personalize o texto em Authentication → Modelos.
-- Vigilantes precisam de e‑mail para login nesta etapa. Login por matrícula pode ser adicionado depois sem mudar o modelo.
+- O acesso do posto usa e-mail sintético `login@postos.invalid`. O emulador do Auth aceita esse formato (testado); confirme no primeiro acesso em produção. Se o Firebase recusar, basta trocar `POSTO_LOGIN_DOMAIN` por um subdomínio seu sem caixa de e-mail.
+- Login é único em todo o sistema (entre todas as empresas). Se dois clientes quiserem `portaria`, o segundo recebe "login já em uso". Sugestão: prefixar com a sigla da empresa.
+- A identificação do vigilante de plantão (Etapa 5) é declarada pelo posto e não comprova quem estava presente.
 - Bundle do frontend ~300 KB gzip (SDK do Firebase); otimização (code splitting) na Etapa 8.
 - `idempotency/*` tem `expiresAt`; configure a política de TTL do Firestore nesse campo (ou a limpeza da Etapa 8).

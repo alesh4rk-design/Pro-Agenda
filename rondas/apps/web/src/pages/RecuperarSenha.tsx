@@ -15,6 +15,10 @@ export function RecuperarSenhaPage() {
     setErro("");
     setEnviando(true);
     try {
+      if (!email.includes("@")) {
+        setErro("Para o acesso do posto, peça ao administrador da empresa uma nova senha.");
+        return;
+      }
       await sendPasswordResetEmail(auth, email.trim());
       setEnviado(true);
     } catch (err) {
@@ -39,9 +43,12 @@ export function RecuperarSenhaPage() {
         ) : (
           <>
             <p className="muted">Informe o e-mail usado no acesso. Enviaremos um link para definir uma nova senha.</p>
+            <p className="alert alert-warn small">
+              Acesso do posto não usa e-mail: peça ao administrador da empresa para redefinir a senha.
+            </p>
             <label>
               E-mail
-              <input type="email" inputMode="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <input type="text" inputMode="email" autoCapitalize="none" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </label>
             {erro && <p className="alert alert-error" role="alert">{erro}</p>}
             <button className="btn btn-primary btn-lg" disabled={enviando || !email}>

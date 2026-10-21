@@ -6,6 +6,27 @@ rondas e plano de implementação.
 
 ---
 
+## 0. Modelo de uso e de acessos
+
+- **Você (administrador geral)** vende o sistema e cadastra cada **empresa cliente**, com o
+  primeiro **administrador da empresa**.
+- **O administrador da empresa cliente** cadastra seus postos e cria **um acesso para cada posto**
+  onde o sistema for usado: login simples (ex.: `portaria-jardim`) e senha definidos por ele.
+  Esse login é usado pela equipe do posto, no celular ou tablet do posto. Ele pode trocar a senha
+  a qualquer momento, e a troca derruba as sessões abertas, por exemplo quando alguém deixa o posto.
+- **Vigilantes não têm login.** Ficam em um cadastro simples (`vigilantes`, sem credenciais). Na
+  execução da ronda, o acesso do posto informa quem está de plantão. Essa identificação é
+  **declarada** (não autenticada), e os relatórios a apresentam assim. A prova operacional continua
+  sendo o acesso do posto + QR + horário do servidor + GPS.
+- **Supervisores e fiscais** têm acesso individual por e-mail (opcional para a empresa).
+
+Por que o acesso do posto usa um "e-mail sintético": o Firebase Authentication exige e-mail para o
+login com senha. O login `portaria-jardim` vira internamente `portaria-jardim@postos.invalid`
+(domínio reservado, que nunca recebe mensagens). Na tela, a pessoa digita só o login. Como não há
+e-mail real, a recuperação de senha do posto é feita pelo administrador da empresa.
+
+---
+
 ## 1. Arquitetura proposta
 
 ```
@@ -61,14 +82,15 @@ implementa contadores de consumo (`usage/{data}`) e alertas ao atingir 70%/90% d
 | `config/{outros}` | parâmetros globais | admin geral | Worker |
 | `companies/{id}` | empresa, status, permissões do admin da empresa, retenção | admin geral; membros ativos da empresa | Worker |
 | `contracts/{id}` | contrato (`companyId`) | admin geral; admin da empresa; supervisor vinculado ao contrato | Worker |
-| `posts/{id}` | posto (`companyId`, `contractId`, fuso, regra de virada) | admin geral; admin da empresa; supervisor/vigilante vinculado | Worker |
-| `users/{uid}` | perfil, escopo, status | o próprio; admin geral; admin da empresa; supervisor (só vigilantes) | Worker |
+| `posts/{id}` | posto (`companyId`, `contractId`, fuso, regra de virada) | admin geral; admin da empresa; supervisor ou acesso do posto vinculado | Worker |
+| `users/{uid}` | contas com login: admins, supervisores e acessos de posto (`login`) | o próprio; admin geral; admin da empresa; supervisor (só acessos de posto) | Worker |
+| `vigilantes/{id}` | vigilantes **sem login** (nome, matrícula, postos) | admins; supervisor e acesso do posto que compartilham um posto | Worker |
 | `checkpoints/{id}` | ponto de ronda (sem o segredo do QR) | escopo do posto | Worker |
 | `checkpointSecrets/{id}` | hash do token do QR | **ninguém** (só backend) | Worker |
 | `checklists/{id}` + `/versions/{n}` | checklist e versões imutáveis | admins; escopo do posto | Worker |
 | `schedules/{id}` + `/versions/{n}` | programação versionada por vigência | escopo do posto | Worker |
 | `rounds/{postId_yyyyMMddHHmm}` | ronda prevista (ID determinístico) | escopo do posto | Worker (cron e execução) |
-| `scans/{uuid}` | leitura de QR (UUID gerado no aparelho) | admins; supervisor do posto; vigilante: só as próprias | Worker |
+| `scans/{uuid}` | leitura de QR (UUID gerado no aparelho), com `vigilanteId` declarado | admins; supervisor do posto; acesso do próprio posto | Worker |
 | `photos/{id}` | metadados da foto (arquivo no R2) | admins; supervisor do posto; autor | Worker |
 | `justifications/{id}` | justificativas (não apagam a falha) | escopo do posto | Worker |
 | `incidents/{id}` | ocorrências | escopo do posto | Worker |
@@ -98,13 +120,13 @@ can(actor, permissão, escopo?) = hasPermission(actor, permissão) && canAccessS
 | admin_geral | todas as empresas |
 | admin_empresa | somente a própria empresa (`cid`) |
 | supervisor / fiscal | própria empresa **e** (posto em `postIds` **ou** contrato em `contractIds`) |
-| vigilante | própria empresa **e** posto em `postIds` |
+| posto (acesso do posto) | própria empresa **e** o único posto em `postIds` |
 
 Conta com status ≠ `ativo` ou empresa ≠ `ativa` ⇒ nenhuma permissão.
 
 **Permissões por perfil** (resumo)
 
-| Permissão | geral | empresa | supervisor | vigilante |
+| Permissão | geral | empresa | supervisor | posto |
 |---|:-:|:-:|:-:|:-:|
 | sistema.configurar, empresa.gerir, auditoria.ver, retencao.gerir | ✔ | | | |
 | contrato.gerir, posto.gerir | ✔ | ✔ se a empresa permitir | | |
@@ -114,7 +136,7 @@ Conta com status ≠ `ativo` ou empresa ≠ `ativa` ⇒ nenhuma permissão.
 | ronda.executar, ocorrencia.registrar, ronda.ver_proprias | ✔ | | | ✔ |
 
 **Cadastro de usuários (sem escalonamento de privilégio)**: admin geral cria qualquer perfil;
-admin da empresa cria apenas supervisor/fiscal e vigilante na própria empresa; ninguém altera o
+admin da empresa cria apenas supervisor/fiscal e acessos de posto na própria empresa; ninguém altera o
 próprio perfil/status; troca de empresa não é permitida (cria-se outro usuário, preservando o histórico).
 
 **Três camadas de defesa**: (1) Worker valida tudo antes de escrever; (2) regras do Firestore
@@ -125,20 +147,26 @@ isolam leituras e negam escritas; (3) a interface esconde o que não se aplica �
 ## 4. Fluxo de autenticação
 
 ```
-1. Admin cadastra usuário  ──▶ Worker: valida permissão/escopo ─▶ cria conta no Auth (sem senha)
-                                 ─▶ define claims {role, cid} ─▶ commit atômico: users/{uid} + auditoria + idempotência
-                                 (falhou o commit? apaga a conta criada — sem contas órfãs)
-2. App envia e-mail "definir senha" (sendPasswordResetEmail) ──▶ usuário cria a própria senha
-3. Login (Firebase Auth, e-mail/senha) ─▶ ID token (1 h) com claims
-4. App chama GET /v1/me ─▶ Worker verifica assinatura (JWKS Google), emissor, público, validade
-                         ─▶ lê users/{uid}: existe? ativo? claims == documento? empresa ativa?
-                         ─▶ devolve perfil + permissões efetivas
-5. Leituras do Firestore: regras checam claims E users/{uid} (status, role, companyId)
-6. Bloqueio: Worker grava status ⇒ acesso negado imediatamente (regras e backend), desativa a conta
-   no Auth (refresh falha) e revoga sessões.
-7. Troca de perfil: novas claims; token antigo recebe CLAIMS_DESATUALIZADAS; o app renova o token
-   (getIdToken(true)) e repete a chamada automaticamente.
-8. Recuperação de senha: tela própria; não revela se o e-mail existe.
+Acesso do posto (login + senha definidos pelo administrador da empresa)
+1. Admin da empresa cria o acesso ─▶ Worker valida permissão/escopo (exatamente 1 posto da empresa)
+     ─▶ cria conta no Auth com login@postos.invalid e a senha informada ─▶ claims {role:"posto", cid}
+     ─▶ commit atômico: users/{uid} + auditoria + idempotência (a senha nunca é gravada no Firestore)
+     (falhou o commit? apaga a conta criada, sem contas órfãs)
+2. Equipe do posto entra digitando só o login e a senha.
+3. Troca de senha: admin da empresa ─▶ POST /v1/users/:uid/senha ─▶ nova senha + sessões revogadas + auditoria.
+
+Administradores e supervisores (e-mail)
+1. Admin cadastra ─▶ conta sem senha ─▶ app envia e-mail "definir senha" ─▶ pessoa cria a própria senha.
+2. Recuperação de senha pela tela "Esqueci minha senha" (não revela se o e-mail existe).
+
+Comum a todos
+- Login (Firebase Auth) ─▶ ID token (1 h) com claims.
+- App chama GET /v1/me ─▶ Worker verifica assinatura (JWKS Google), emissor, público e validade
+  ─▶ lê users/{uid}: existe? ativo? claims == documento? empresa ativa? ─▶ perfil + permissões.
+- Leituras do Firestore: regras checam claims E users/{uid} (status, role, companyId).
+- Bloqueio: status gravado ⇒ acesso negado na hora; conta desativada no Auth; sessões revogadas.
+- Troca de perfil: novas claims; o token antigo recebe CLAIMS_DESATUALIZADAS; o app renova e repete.
+  Acesso do posto não pode virar outro perfil (nem o contrário): as credenciais são diferentes.
 ```
 
 O primeiro administrador geral é criado por `scripts/bootstrap-admin.mjs`, executado localmente
@@ -220,10 +248,10 @@ referência 60 min · segunda a sexta.
 | Etapa | Entrega | Status |
 |---|---|---|
 | 1 | Arquitetura, modelo de dados, autenticação, RBAC, regras, auditoria, idempotência, PWA base, telas de login/recuperação/usuários/auditoria/configuração | **Concluída** — ver [ETAPA-1.md](ETAPA-1.md) |
-| 2 | CRUD de empresas, contratos e postos (com bloqueio/desativação em cascata lógica) | Próxima |
+| 2 | CRUD de empresas, contratos, postos e cadastro de vigilantes (sem login) | Próxima |
 | 3 | Pontos de ronda, QR (token + hash, impressão), checklists versionados | |
 | 4 | Gerador de programação (modelos A–D), prévia com conflitos, cron idempotente, virada de dia | |
-| 5 | App do vigilante: leitor de QR, GPS com política, checklist, fotos comprimidas → R2, fila offline | |
+| 5 | App do posto: identificação do vigilante de plantão, leitor de QR, GPS com política, checklist, fotos comprimidas → R2, fila offline | |
 | 6 | Cron de status, atrasos, não execução, justificativas | |
 | 7 | Relatórios (PDF/CSV), índice bruto/ajustado, mapa (Leaflet + OpenStreetMap) e calor, alertas | |
 | 8 | Retenção automática de fotos, contadores de consumo, rate limit global, backup/exportação, testes de segurança | |

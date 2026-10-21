@@ -6,7 +6,7 @@ rules_version = '2';
 // Princípios:
 //  1. NENHUMA escrita direta pelo cliente. Toda alteração passa pelo Worker
 //     (conta de serviço), que valida permissões e grava auditoria.
-//  2. Leituras isoladas por empresa e, para supervisor/vigilante, por posto/contrato.
+//  2. Leituras isoladas por empresa e, para supervisor e acesso do posto, por posto/contrato.
 //  3. O documento users/{uid} é a fonte da verdade: as claims do token (role, cid)
 //     precisam coincidir com ele e a conta precisa estar ativa. Isso torna o
 //     bloqueio imediato e impede uso de claims desatualizadas.
@@ -57,11 +57,11 @@ service cloud.firestore {
       return memberOf(cid) && claimRole() == 'admin_empresa';
     }
     // Acesso a um recurso de posto: admin geral, admin da empresa, ou
-    // supervisor/vigilante vinculado ao posto (supervisor também por contrato).
+    // acesso do posto / supervisor vinculado ao posto (supervisor também por contrato).
     function canSeePost(cid, contractId, postId) {
       return isAdminGeral()
         || isCompanyAdmin(cid)
-        || (memberOf(cid) && claimRole() == 'vigilante' && postId in me().get('postIds', []))
+        || (memberOf(cid) && claimRole() == 'posto' && postId in me().get('postIds', []))
         || (memberOf(cid) && claimRole() == 'supervisor'
             && (postId in me().get('postIds', []) || contractId in me().get('contractIds', [])));
     }
@@ -90,8 +90,8 @@ service cloud.firestore {
       allow read: if (signedIn() && request.auth.uid == uid)
         || isAdminGeral()
         || isCompanyAdmin(resource.data.companyId)
-        // Supervisor vê os vigilantes da empresa (para acompanhar rondas).
-        || (memberOf(resource.data.companyId) && claimRole() == 'supervisor' && resource.data.role == 'vigilante');
+        // Supervisor vê os acessos de posto da empresa (para acompanhar rondas).
+        || (memberOf(resource.data.companyId) && claimRole() == 'supervisor' && resource.data.role == 'posto');
     }
 
     match /auditLogs/{id} {
@@ -131,13 +131,15 @@ service cloud.firestore {
       }
     }
 
-    // Leituras de QR: vigilante vê somente as próprias.
-    match /scans/{id} {
+    // Leituras de QR: escopo do posto (o acesso do posto vê as leituras do próprio posto).
+    match /scans/{id} { allow read: if canSeePostDoc(resource.data); }
+
+    // Vigilantes (cadastro sem login): admins; supervisor e acesso do posto que compartilham um posto.
+    match /vigilantes/{id} {
       allow read: if isAdminGeral()
         || isCompanyAdmin(resource.data.companyId)
-        || isSupervisorOf(resource.data)
-        || (memberOf(resource.data.companyId) && claimRole() == 'vigilante'
-            && resource.data.userId == request.auth.uid);
+        || (memberOf(resource.data.companyId) && claimRole() in ['posto', 'supervisor']
+            && resource.data.get('postIds', []).hasAny(me().get('postIds', [])));
     }
 
     match /photos/{id} {

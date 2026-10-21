@@ -22,6 +22,13 @@ rondas/
 └── firestore.indexes.json
 ```
 
+## Como os acessos funcionam
+
+O administrador geral cadastra as empresas clientes. O **administrador de cada empresa** cria
+**um acesso por posto** (login + senha) e o entrega à equipe do posto. Vigilantes não têm login:
+são cadastrados pelo nome e identificados na ronda. Supervisores e fiscais podem ter acesso por e-mail.
+Detalhes em [docs/ARQUITETURA.md](docs/ARQUITETURA.md#0-modelo-de-uso-e-de-acessos).
+
 ## Requisitos
 
 - Node.js 20+ (testado com 22)

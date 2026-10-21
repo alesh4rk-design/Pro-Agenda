@@ -4,7 +4,7 @@ import { ApiError, corsHeaders, errorResponse, json } from "./http.js";
 import { allow } from "./rateLimit.js";
 import { putSystemConfig } from "./routes/config.js";
 import { getMe } from "./routes/me.js";
-import { createUser, updateUser } from "./routes/users.js";
+import { createUser, resetPostoPassword, updateUser } from "./routes/users.js";
 
 type Handler = (ctx: Ctx) => Promise<Response>;
 interface Route {
@@ -27,6 +27,7 @@ const ROUTES: Route[] = [
   route("PUT", "/v1/config/sistema", putSystemConfig),
   route("POST", "/v1/users", createUser),
   route("PATCH", "/v1/users/:uid", updateUser),
+  route("POST", "/v1/users/:uid/senha", resetPostoPassword),
 ];
 
 /** Limites por usuário/minuto (por isolate). */

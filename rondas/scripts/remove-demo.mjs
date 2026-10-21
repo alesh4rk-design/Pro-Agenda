@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Remove todos os documentos marcados com `demo: true` (e as contas *@demo.local).
+ * Remove todos os documentos marcados com `demo: true` (e as contas *@demo.local e *-demo do posto).
  * Por segurança, roda somente contra os emuladores, a menos que --project seja
  * informado explicitamente junto com --confirmar.
  *
@@ -25,7 +25,7 @@ initializeApp(values.project ? { projectId: values.project, credential: applicat
 const db = getFirestore();
 const auth = getAuth();
 
-const collections = ["companies", "contracts", "posts", "users", "checkpoints", "checklists", "schedules", "rounds", "scans", "incidents", "alerts", "photos"];
+const collections = ["companies", "contracts", "posts", "users", "vigilantes", "checkpoints", "checklists", "schedules", "rounds", "scans", "incidents", "alerts", "photos"];
 let total = 0;
 for (const c of collections) {
   const snap = await db.collection(c).where("demo", "==", true).get();
@@ -35,6 +35,6 @@ for (const c of collections) {
   }
 }
 const list = await auth.listUsers(1000);
-const demoUids = list.users.filter((u) => u.email?.endsWith("@demo.local")).map((u) => u.uid);
+const demoUids = list.users.filter((u) => u.email?.endsWith("@demo.local") || /-demo@postos\.invalid$/.test(u.email ?? "")).map((u) => u.uid);
 if (demoUids.length) await auth.deleteUsers(demoUids);
 console.log(`Removidos ${total} documentos e ${demoUids.length} contas de demonstração.`);

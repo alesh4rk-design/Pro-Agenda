@@ -9,7 +9,8 @@ export async function getMe(ctx: Ctx): Promise<Response> {
   return json({
     uid: actor.uid,
     nome: profile?.nome ?? "",
-    email: profile?.email ?? "",
+    email: actor.role === "posto" ? "" : (profile?.email ?? ""),
+    login: profile?.login ?? null,
     role: actor.role,
     funcao: profile?.funcao ?? null,
     companyId: actor.companyId,

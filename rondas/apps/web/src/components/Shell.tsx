@@ -14,7 +14,7 @@ interface NavItem {
 // Somente telas já implementadas aparecem no menu (sem botões que não funcionam).
 const NAV: NavItem[] = [
   { to: "/", label: "Painel", icon: "◉" },
-  { to: "/usuarios", label: "Usuários", icon: "👥", permission: "usuario.gerir" },
+  { to: "/usuarios", label: "Acessos", icon: "👥", permission: "usuario.gerir" },
   { to: "/auditoria", label: "Auditoria", icon: "🧾", permission: "auditoria.ver" },
   { to: "/configuracoes", label: "Sistema", icon: "⚙", permission: "sistema.configurar" },
 ];
@@ -49,7 +49,7 @@ export function Shell({ systemName, children }: { systemName: string; children: 
             </NavLink>
           ))}
           <div className="sidenav-user">
-            <strong>{me.nome || me.email}</strong>
+            <strong>{me.nome || me.login || me.email}</strong>
             <span className="muted">{ROLE_LABELS[me.role]}{me.funcao === "fiscal" ? " (fiscal)" : ""}</span>
             <button className="btn btn-ghost" onClick={() => void logout()}>Sair</button>
           </div>

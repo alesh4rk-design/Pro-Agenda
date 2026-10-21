@@ -6,6 +6,7 @@ import {
   canAccessScope,
   canManageUser,
   createUserSchema,
+  loginIdentifierToEmail,
   hasPermission,
   permissionsOf,
 } from "../src/index.js";
@@ -26,7 +27,7 @@ function actor(partial: Partial<Actor> & Pick<Actor, "role">): Actor {
 const geral = actor({ role: "admin_geral" });
 const adminA = actor({ role: "admin_empresa" });
 const supA = actor({ role: "supervisor", postIds: ["p1"], contractIds: ["c2"] });
-const vigA = actor({ role: "vigilante", postIds: ["p1"] });
+const postoA = actor({ role: "posto", postIds: ["p1"] });
 
 describe("isolamento entre empresas", () => {
   it("admin_empresa não acessa outra empresa", () => {
@@ -34,9 +35,9 @@ describe("isolamento entre empresas", () => {
     expect(canAccessScope(adminA, { companyId: "empB" })).toBe(false);
   });
 
-  it("supervisor e vigilante não acessam outra empresa mesmo com o mesmo postId", () => {
+  it("supervisor e posto não acessam outra empresa mesmo com o mesmo postId", () => {
     expect(canAccessScope(supA, { companyId: "empB", postId: "p1" })).toBe(false);
-    expect(canAccessScope(vigA, { companyId: "empB", postId: "p1" })).toBe(false);
+    expect(canAccessScope(postoA, { companyId: "empB", postId: "p1" })).toBe(false);
   });
 
   it("escopo sem companyId é negado para perfis de empresa", () => {
@@ -49,11 +50,11 @@ describe("isolamento entre empresas", () => {
 });
 
 describe("escopo por posto/contrato", () => {
-  it("vigilante só acessa o posto vinculado", () => {
-    expect(canAccessScope(vigA, { companyId: "empA", postId: "p1" })).toBe(true);
-    expect(canAccessScope(vigA, { companyId: "empA", postId: "p2" })).toBe(false);
-    expect(canAccessScope(vigA, { companyId: "empA", contractId: "c2", postId: "p9" })).toBe(false);
-    expect(canAccessScope(vigA, { companyId: "empA" })).toBe(false);
+  it("posto só acessa o posto vinculado", () => {
+    expect(canAccessScope(postoA, { companyId: "empA", postId: "p1" })).toBe(true);
+    expect(canAccessScope(postoA, { companyId: "empA", postId: "p2" })).toBe(false);
+    expect(canAccessScope(postoA, { companyId: "empA", contractId: "c2", postId: "p9" })).toBe(false);
+    expect(canAccessScope(postoA, { companyId: "empA" })).toBe(false);
   });
 
   it("supervisor acessa posto vinculado ou qualquer posto de contrato vinculado", () => {
@@ -72,7 +73,7 @@ describe("status de conta e empresa", () => {
   });
 
   it("empresa bloqueada bloqueia seus usuários", () => {
-    const v = actor({ role: "vigilante", postIds: ["p1"], companyStatus: "bloqueada" });
+    const v = actor({ role: "posto", postIds: ["p1"], companyStatus: "bloqueada" });
     expect(hasPermission(v, "ronda.executar")).toBe(false);
     expect(canAccessScope(v, { companyId: "empA", postId: "p1" })).toBe(false);
   });
@@ -83,10 +84,10 @@ describe("status de conta e empresa", () => {
 });
 
 describe("permissões por perfil", () => {
-  it("vigilante executa rondas mas não gerencia nada", () => {
-    expect(hasPermission(vigA, "ronda.executar")).toBe(true);
-    expect(hasPermission(vigA, "usuario.gerir")).toBe(false);
-    expect(hasPermission(vigA, "relatorio.ver")).toBe(false);
+  it("posto executa rondas mas não gerencia nada", () => {
+    expect(hasPermission(postoA, "ronda.executar")).toBe(true);
+    expect(hasPermission(postoA, "usuario.gerir")).toBe(false);
+    expect(hasPermission(postoA, "relatorio.ver")).toBe(false);
   });
 
   it("supervisor acompanha mas não cadastra", () => {
@@ -100,7 +101,7 @@ describe("permissões por perfil", () => {
       expect(hasPermission(geral, p)).toBe(true);
       expect(hasPermission(adminA, p)).toBe(false);
       expect(hasPermission(supA, p)).toBe(false);
-      expect(hasPermission(vigA, p)).toBe(false);
+      expect(hasPermission(postoA, p)).toBe(false);
     }
   });
 
@@ -114,10 +115,10 @@ describe("permissões por perfil", () => {
 });
 
 describe("cadastro de usuários (sem escalonamento de privilégio)", () => {
-  it("admin_empresa cria vigilante/supervisor apenas na própria empresa", () => {
-    expect(canManageUser(adminA, { role: "vigilante", companyId: "empA" })).toBe(true);
+  it("admin_empresa cria posto/supervisor apenas na própria empresa", () => {
+    expect(canManageUser(adminA, { role: "posto", companyId: "empA" })).toBe(true);
     expect(canManageUser(adminA, { role: "supervisor", companyId: "empA" })).toBe(true);
-    expect(canManageUser(adminA, { role: "vigilante", companyId: "empB" })).toBe(false);
+    expect(canManageUser(adminA, { role: "posto", companyId: "empB" })).toBe(false);
   });
 
   it("admin_empresa não cria administradores", () => {
@@ -129,33 +130,56 @@ describe("cadastro de usuários (sem escalonamento de privilégio)", () => {
     expect(canManageUser(geral, { role: "admin_geral", companyId: null })).toBe(true);
     expect(canManageUser(geral, { role: "admin_geral", companyId: "empA" })).toBe(false);
     expect(canManageUser(geral, { role: "admin_empresa", companyId: "empB" })).toBe(true);
-    expect(canManageUser(geral, { role: "vigilante", companyId: null })).toBe(false);
+    expect(canManageUser(geral, { role: "posto", companyId: null })).toBe(false);
   });
 
-  it("supervisor e vigilante não cadastram usuários", () => {
+  it("supervisor e posto não cadastram usuários", () => {
     expect(assignableRoles(supA)).toEqual([]);
-    expect(canManageUser(vigA, { role: "vigilante", companyId: "empA" })).toBe(false);
+    expect(canManageUser(postoA, { role: "posto", companyId: "empA" })).toBe(false);
   });
 });
 
 describe("validação de entrada", () => {
+  const posto = { nome: "Portaria Jardim", role: "posto", companyId: "empA", postIds: ["p1"], login: "portaria-jardim", senha: "senha-forte-1" };
+
   it("rejeita campos desconhecidos (ex.: tentativa de injetar status/claims)", () => {
-    const r = createUserSchema.safeParse({ email: "a@b.com", nome: "Ana", role: "vigilante", companyId: "empA", admin: true });
-    expect(r.success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, admin: true }).success).toBe(false);
   });
 
   it("rejeita IDs com caracteres de caminho", () => {
-    const r = createUserSchema.safeParse({ email: "a@b.com", nome: "Ana", role: "vigilante", companyId: "../empB" });
-    expect(r.success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, companyId: "../empB" }).success).toBe(false);
   });
 
   it("exige empresa para perfis de empresa e proíbe para admin_geral", () => {
-    expect(createUserSchema.safeParse({ email: "a@b.com", nome: "Ana", role: "vigilante", companyId: null }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, companyId: null }).success).toBe(false);
     expect(createUserSchema.safeParse({ email: "a@b.com", nome: "Ana", role: "admin_geral", companyId: "x" }).success).toBe(false);
   });
 
-  it("normaliza e-mail", () => {
-    const r = createUserSchema.parse({ email: "  Ana@Empresa.COM ", nome: "Ana", role: "vigilante", companyId: "empA" });
-    expect(r.email).toBe("ana@empresa.com");
+  it("acesso do posto: login e senha obrigatórios, sem e-mail, exatamente um posto", () => {
+    expect(createUserSchema.safeParse(posto).success).toBe(true);
+    expect(createUserSchema.safeParse({ ...posto, login: undefined }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, senha: "curta" }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, email: "a@b.com" }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, postIds: [] }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, postIds: ["p1", "p2"] }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, login: "Ab" }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...posto, login: "joao@x" }).success).toBe(false);
+  });
+
+  it("normaliza o login para minúsculas", () => {
+    expect(createUserSchema.parse({ ...posto, login: "  Portaria-Jardim " }).login).toBe("portaria-jardim");
+  });
+
+  it("administradores e supervisores usam e-mail, sem login/senha", () => {
+    const sup = { email: "  Ana@Empresa.COM ", nome: "Ana", role: "supervisor", companyId: "empA", postIds: ["p1"] };
+    expect(createUserSchema.parse(sup).email).toBe("ana@empresa.com");
+    expect(createUserSchema.safeParse({ ...sup, email: undefined }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...sup, senha: "senha-forte-1" }).success).toBe(false);
+    expect(createUserSchema.safeParse({ ...sup, email: "x@postos.invalid" }).success).toBe(false);
+  });
+
+  it("login digitado vira e-mail sintético; e-mail fica como está", () => {
+    expect(loginIdentifierToEmail(" Portaria-Jardim ")).toBe("portaria-jardim@postos.invalid");
+    expect(loginIdentifierToEmail("Admin@Empresa.com")).toBe("admin@empresa.com");
   });
 });

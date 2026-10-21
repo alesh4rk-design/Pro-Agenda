@@ -8,10 +8,11 @@ beforeEach(() => {
   t = setup();
 });
 
-const novoVigilante = (companyId = "empA", extra: Record<string, unknown> = {}) => ({
-  email: "novo@empresa.com",
-  nome: "Novo Vigilante",
-  role: "vigilante",
+const novoPosto = (companyId = "empA", extra: Record<string, unknown> = {}) => ({
+  login: "portaria-nova",
+  senha: "senha-do-posto-1",
+  nome: "Portaria Nova",
+  role: "posto",
   companyId,
   postIds: companyId === "empA" ? ["pA"] : ["pB"],
   ...extra,
@@ -30,14 +31,14 @@ describe("autenticação", () => {
   });
 
   it("rejeita usuário sem perfil", async () => {
-    const r = await t.call("GET", "/v1/me", "tok|fantasma|vigilante|empA");
+    const r = await t.call("GET", "/v1/me", "tok|fantasma|posto|empA");
     expect(r.status).toBe(403);
     expect(r.body.erro.codigo).toBe("PERFIL_INEXISTENTE");
   });
 
   it("rejeita usuário bloqueado", async () => {
-    t.db.docs.get("users/vigA")!.status = "bloqueado";
-    const r = await t.call("GET", "/v1/me", t.tokens.vigA);
+    t.db.docs.get("users/postoA")!.status = "bloqueado";
+    const r = await t.call("GET", "/v1/me", t.tokens.postoA);
     expect(r.status).toBe(403);
     expect(r.body.erro.codigo).toBe("USUARIO_INATIVO");
   });
@@ -50,8 +51,8 @@ describe("autenticação", () => {
   });
 
   it("claims forjadas/desatualizadas não concedem acesso (documento é a fonte da verdade)", async () => {
-    // Token afirma admin_geral, mas o perfil gravado é vigilante.
-    const r = await t.call("GET", "/v1/me", "tok|vigA|admin_geral|");
+    // Token afirma admin_geral, mas o perfil gravado é posto.
+    const r = await t.call("GET", "/v1/me", "tok|postoA|admin_geral|");
     expect(r.status).toBe(401);
     expect(r.body.erro.codigo).toBe("CLAIMS_DESATUALIZADAS");
     // Token afirma outra empresa.
@@ -60,9 +61,9 @@ describe("autenticação", () => {
   });
 
   it("GET /v1/me devolve permissões do perfil", async () => {
-    const r = await t.call("GET", "/v1/me", t.tokens.vigA);
+    const r = await t.call("GET", "/v1/me", t.tokens.postoA);
     expect(r.status).toBe(200);
-    expect(r.body.role).toBe("vigilante");
+    expect(r.body.role).toBe("posto");
     expect(r.body.permissions).toContain("ronda.executar");
     expect(r.body.permissions).not.toContain("usuario.gerir");
     expect(r.body.assignableRoles).toEqual([]);
@@ -79,7 +80,7 @@ describe("configuração do sistema", () => {
     expect(logs[0]).toMatchObject({ action: "sistema.configurar", actorUid: "geral", after: { nomeSistema: "Ronda Segura" } });
   });
 
-  it.each(["admA", "supA", "vigA"] as const)("%s não altera o nome do sistema", async (who) => {
+  it.each(["admA", "supA", "postoA"] as const)("%s não altera o nome do sistema", async (who) => {
     const r = await t.call("PUT", "/v1/config/sistema", t.tokens[who], { nomeSistema: "Hack" });
     expect(r.status).toBe(403);
     expect(t.db.docs.get("config/publico")).toBeUndefined();
@@ -93,23 +94,29 @@ describe("configuração do sistema", () => {
 });
 
 describe("cadastro de usuários", () => {
-  it("admin_empresa cadastra vigilante na própria empresa (Auth + claims + perfil + auditoria)", async () => {
-    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante(), { "Idempotency-Key": KEY(1) });
+  it("admin_empresa cria acesso do posto com login e senha (Auth + claims + perfil + auditoria)", async () => {
+    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto(), { "Idempotency-Key": KEY(1) });
     expect(r.status).toBe(201);
     const uid = r.body.uid;
-    expect(t.identity.users.get(uid)!.claims).toEqual({ role: "vigilante", cid: "empA" });
-    expect(t.db.docs.get(`users/${uid}`)).toMatchObject({ role: "vigilante", companyId: "empA", status: "ativo", createdBy: "admA" });
+    const conta = t.identity.users.get(uid)!;
+    expect(conta.claims).toEqual({ role: "posto", cid: "empA" });
+    expect(conta.email).toBe("portaria-nova@postos.invalid");
+    expect(conta.password).toBe("senha-do-posto-1");
+    expect(t.db.docs.get(`users/${uid}`)).toMatchObject({ role: "posto", login: "portaria-nova", companyId: "empA", postIds: ["pA"], status: "ativo", createdBy: "admA" });
+    expect(r.body).toMatchObject({ login: "portaria-nova", email: null });
+    // A senha não aparece em nenhum documento gravado (perfil, auditoria, idempotência).
+    expect(JSON.stringify([...t.db.docs.values()])).not.toContain("senha-do-posto-1");
     expect(t.db.collection("auditLogs")[0]).toMatchObject({ action: "usuario.criar", targetId: uid, companyId: "empA" });
   });
 
   it("admin_empresa NÃO cadastra usuário em outra empresa (alterando companyId)", async () => {
-    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante("empB"), { "Idempotency-Key": KEY(2) });
+    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto("empB"), { "Idempotency-Key": KEY(2) });
     expect(r.status).toBe(403);
     expect(t.identity.users.size).toBe(5);
   });
 
   it("admin_empresa NÃO vincula posto de outra empresa", async () => {
-    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante("empA", { postIds: ["pB"] }), { "Idempotency-Key": KEY(3) });
+    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto("empA", { postIds: ["pB"] }), { "Idempotency-Key": KEY(3) });
     expect(r.status).toBe(400);
     expect(r.body.erro.codigo).toBe("VINCULO_INVALIDO");
   });
@@ -122,8 +129,8 @@ describe("cadastro de usuários", () => {
     }
   });
 
-  it.each(["supA", "vigA"] as const)("%s não cadastra usuários", async (who) => {
-    const r = await t.call("POST", "/v1/users", t.tokens[who], novoVigilante(), { "Idempotency-Key": KEY(4) });
+  it.each(["supA", "postoA"] as const)("%s não cadastra usuários", async (who) => {
+    const r = await t.call("POST", "/v1/users", t.tokens[who], novoPosto(), { "Idempotency-Key": KEY(4) });
     expect(r.status).toBe(403);
   });
 
@@ -140,20 +147,23 @@ describe("cadastro de usuários", () => {
 
   it("não cadastra em empresa bloqueada", async () => {
     t.db.docs.get("companies/empB")!.status = "bloqueada";
-    const r = await t.call("POST", "/v1/users", t.tokens.geral, novoVigilante("empB"), { "Idempotency-Key": KEY(6) });
+    const r = await t.call("POST", "/v1/users", t.tokens.geral, novoPosto("empB"), { "Idempotency-Key": KEY(6) });
     expect(r.status).toBe(409);
   });
 
-  it("e-mail duplicado é recusado", async () => {
-    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante("empA", { email: "vigA@teste.local" }), { "Idempotency-Key": KEY(7) });
+  it("login ou e-mail duplicado é recusado", async () => {
+    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto("empA", { login: "Portaria-A" }), { "Idempotency-Key": KEY(7) });
     expect(r.status).toBe(409);
-    expect(r.body.erro.codigo).toBe("EMAIL_EM_USO");
+    expect(r.body.erro.codigo).toBe("LOGIN_EM_USO");
+    const sup = { email: "SUPA@teste.local", nome: "Sup", role: "supervisor", companyId: "empA", postIds: ["pA"] };
+    const r2 = await t.call("POST", "/v1/users", t.tokens.admA, sup, { "Idempotency-Key": KEY(17) });
+    expect(r2.body.erro.codigo).toBe("EMAIL_EM_USO");
   });
 
   it("requisição repetida com a mesma Idempotency-Key não duplica o usuário", async () => {
     const h = { "Idempotency-Key": KEY(8) };
-    const r1 = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante(), h);
-    const r2 = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante(), h);
+    const r1 = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto(), h);
+    const r2 = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto(), h);
     expect(r1.status).toBe(201);
     expect(r2.status).toBe(201);
     expect(r2.headers.get("Idempotent-Replay")).toBe("true");
@@ -163,39 +173,39 @@ describe("cadastro de usuários", () => {
   });
 
   it("exige Idempotency-Key", async () => {
-    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante());
+    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto());
     expect(r.status).toBe(400);
   });
 
   it("se a gravação falhar, a conta criada no Auth é removida (sem conta órfã)", async () => {
     t.db.failNextCommit = true;
-    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoVigilante(), { "Idempotency-Key": KEY(9) });
+    const r = await t.call("POST", "/v1/users", t.tokens.admA, novoPosto(), { "Idempotency-Key": KEY(9) });
     expect(r.status).toBe(500);
     expect(await t.identity.findUidByEmail("novo@empresa.com")).toBeNull();
   });
 });
 
 describe("edição de usuários", () => {
-  it("admin_empresa bloqueia vigilante: perfil, Auth desativado, sessões revogadas, auditoria", async () => {
-    const r = await t.call("PATCH", "/v1/users/vigA", t.tokens.admA, { status: "bloqueado", motivo: "Desligamento" });
+  it("admin_empresa bloqueia o acesso do posto: perfil, Auth desativado, sessões revogadas, auditoria", async () => {
+    const r = await t.call("PATCH", "/v1/users/postoA", t.tokens.admA, { status: "bloqueado", motivo: "Desligamento" });
     expect(r.status).toBe(200);
-    expect(t.db.docs.get("users/vigA")!.status).toBe("bloqueado");
-    expect(t.identity.users.get("vigA")!.disabled).toBe(true);
-    expect(t.identity.users.get("vigA")!.revokedAt).toBeDefined();
+    expect(t.db.docs.get("users/postoA")!.status).toBe("bloqueado");
+    expect(t.identity.users.get("postoA")!.disabled).toBe(true);
+    expect(t.identity.users.get("postoA")!.revokedAt).toBeDefined();
     expect(t.db.collection("auditLogs")[0]).toMatchObject({
       action: "usuario.status.bloqueado",
       before: { status: "ativo" },
       after: { status: "bloqueado" },
       motivo: "Desligamento",
     });
-    // Depois do bloqueio, o token ainda válido do vigilante não serve mais.
-    expect((await t.call("GET", "/v1/me", t.tokens.vigA)).status).toBe(403);
+    // Depois do bloqueio, o token ainda válido do posto não serve mais.
+    expect((await t.call("GET", "/v1/me", t.tokens.postoA)).status).toBe(403);
   });
 
   it("usuário de outra empresa é tratado como inexistente (manipulação de ID na URL)", async () => {
-    const r = await t.call("PATCH", "/v1/users/vigA", t.tokens.admB, { status: "bloqueado" });
+    const r = await t.call("PATCH", "/v1/users/postoA", t.tokens.admB, { status: "bloqueado" });
     expect(r.status).toBe(404);
-    expect(t.db.docs.get("users/vigA")!.status).toBe("ativo");
+    expect(t.db.docs.get("users/postoA")!.status).toBe("ativo");
   });
 
   it("admin_empresa não edita outro admin nem o admin_geral", async () => {
@@ -204,9 +214,10 @@ describe("edição de usuários", () => {
     expect((await t.call("PATCH", "/v1/users/geral", t.tokens.admA, { nome: "Outro" })).status).toBe(404);
   });
 
-  it("admin_empresa não promove vigilante a administrador", async () => {
-    const r = await t.call("PATCH", "/v1/users/vigA", t.tokens.admA, { role: "admin_empresa", postIds: [] });
-    expect(r.status).toBe(403);
+  it("admin_empresa não promove acesso do posto a administrador", async () => {
+    const r = await t.call("PATCH", "/v1/users/postoA", t.tokens.admA, { role: "admin_empresa", postIds: [] });
+    expect([400, 403]).toContain(r.status);
+    expect(t.db.docs.get("users/postoA")!.role).toBe("posto");
   });
 
   it("ninguém altera o próprio perfil ou status", async () => {
@@ -215,12 +226,26 @@ describe("edição de usuários", () => {
   });
 
   it("promoção de perfil atualiza as claims", async () => {
-    const r = await t.call("PATCH", "/v1/users/vigA", t.tokens.admA, { role: "supervisor", funcao: "fiscal" });
+    const r = await t.call("PATCH", "/v1/users/supA", t.tokens.geral, { role: "admin_empresa", postIds: [] });
     expect(r.status).toBe(200);
-    expect(t.identity.users.get("vigA")!.claims).toEqual({ role: "supervisor", cid: "empA" });
-    expect(t.db.docs.get("users/vigA")).toMatchObject({ role: "supervisor", funcao: "fiscal" });
-    // O token antigo (vigilante) deixa de valer até ser renovado.
-    expect((await t.call("GET", "/v1/me", t.tokens.vigA)).body.erro.codigo).toBe("CLAIMS_DESATUALIZADAS");
+    expect(t.identity.users.get("supA")!.claims).toEqual({ role: "admin_empresa", cid: "empA" });
+    expect(t.db.docs.get("users/supA")).toMatchObject({ role: "admin_empresa", funcao: null });
+    // O token antigo (supervisor) deixa de valer até ser renovado.
+    expect((await t.call("GET", "/v1/me", t.tokens.supA)).body.erro.codigo).toBe("CLAIMS_DESATUALIZADAS");
+  });
+
+  it("acesso do posto não vira outro perfil (credenciais diferentes)", async () => {
+    const r = await t.call("PATCH", "/v1/users/postoA", t.tokens.admA, { role: "supervisor" });
+    expect(r.status).toBe(400);
+    expect(r.body.erro.codigo).toBe("PERFIL_INCOMPATIVEL");
+    const r2 = await t.call("PATCH", "/v1/users/supA", t.tokens.admA, { role: "posto" });
+    expect(r2.body.erro.codigo).toBe("PERFIL_INCOMPATIVEL");
+  });
+
+  it("acesso do posto fica vinculado a exatamente um posto", async () => {
+    t.db.docs.set("posts/pA2", { companyId: "empA", contractId: "cA" });
+    expect((await t.call("PATCH", "/v1/users/postoA", t.tokens.admA, { postIds: ["pA", "pA2"] })).status).toBe(400);
+    expect((await t.call("PATCH", "/v1/users/postoA", t.tokens.admA, { postIds: ["pA2"] })).status).toBe(200);
   });
 
   it("valida o estado final (admin não pode ficar com postos)", async () => {
@@ -229,9 +254,34 @@ describe("edição de usuários", () => {
   });
 
   it("sem alterações reais não grava auditoria", async () => {
-    const r = await t.call("PATCH", "/v1/users/vigA", t.tokens.admA, { nome: "vigA" });
+    const r = await t.call("PATCH", "/v1/users/postoA", t.tokens.admA, { nome: "postoA" });
     expect(r.body.alterado).toBe(false);
     expect(t.db.collection("auditLogs")).toHaveLength(0);
+  });
+});
+
+describe("senha do acesso do posto", () => {
+  it("admin da empresa redefine a senha: Auth atualizado, sessões encerradas, auditoria sem a senha", async () => {
+    const r = await t.call("POST", "/v1/users/postoA/senha", t.tokens.admA, { senha: "nova-senha-posto", motivo: "Troca de turno" });
+    expect(r.status).toBe(200);
+    expect(t.identity.users.get("postoA")!.password).toBe("nova-senha-posto");
+    expect(t.identity.users.get("postoA")!.revokedAt).toBeDefined();
+    const log = t.db.collection("auditLogs")[0]!;
+    expect(log).toMatchObject({ action: "usuario.senha_redefinida", targetId: "postoA", motivo: "Troca de turno" });
+    expect(JSON.stringify(log)).not.toContain("nova-senha-posto");
+  });
+
+  it("admin de outra empresa não redefine (tratado como inexistente)", async () => {
+    expect((await t.call("POST", "/v1/users/postoA/senha", t.tokens.admB, { senha: "nova-senha-posto" })).status).toBe(404);
+  });
+
+  it.each(["supA", "postoA"] as const)("%s não redefine senhas", async (who) => {
+    expect((await t.call("POST", "/v1/users/postoA/senha", t.tokens[who], { senha: "nova-senha-posto" })).status).toBe(403);
+  });
+
+  it("só vale para acesso do posto; senha curta é recusada", async () => {
+    expect((await t.call("POST", "/v1/users/supA/senha", t.tokens.admA, { senha: "nova-senha-posto" })).body.erro.codigo).toBe("PERFIL_INCOMPATIVEL");
+    expect((await t.call("POST", "/v1/users/postoA/senha", t.tokens.admA, { senha: "123" })).status).toBe(400);
   });
 });
 

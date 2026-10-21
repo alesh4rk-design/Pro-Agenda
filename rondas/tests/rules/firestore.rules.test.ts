@@ -39,8 +39,11 @@ beforeEach(async () => {
     await set("checkpoints/kA2", { companyId: "empA", contractId: "cA2", postId: "pA2" });
     await set("checkpoints/kB", { companyId: "empB", contractId: "cB", postId: "pB" });
     await set("checkpointSecrets/kA", { tokenHash: "abc" });
-    await set("scans/sVigA", { companyId: "empA", contractId: "cA", postId: "pA", userId: "vigA" });
-    await set("scans/sOutro", { companyId: "empA", contractId: "cA", postId: "pA", userId: "vigA2" });
+    await set("scans/sPostoA", { companyId: "empA", contractId: "cA", postId: "pA", userId: "postoA" });
+    await set("scans/sPostoA2", { companyId: "empA", contractId: "cA2", postId: "pA2", userId: "postoA2" });
+    await set("vigilantes/jose", { companyId: "empA", nome: "José", postIds: ["pA"] });
+    await set("vigilantes/maria", { companyId: "empA", nome: "Maria", postIds: ["pA2"] });
+    await set("vigilantes/joao", { companyId: "empB", nome: "João", postIds: ["pB"] });
     await set("auditLogs/l1", { companyId: "empA", action: "x" });
     await set("idempotency/x", { a: 1 });
     const u = (uid: string, role: string, companyId: string | null, extra = {}) =>
@@ -49,10 +52,10 @@ beforeEach(async () => {
     await u("admA", "admin_empresa", "empA");
     await u("admB", "admin_empresa", "empB");
     await u("supA", "supervisor", "empA", { contractIds: ["cA2"] });
-    await u("vigA", "vigilante", "empA", { postIds: ["pA"] });
-    await u("vigA2", "vigilante", "empA", { postIds: ["pA"] });
-    await u("vigBloq", "vigilante", "empA", { postIds: ["pA"], status: "bloqueado" });
-    await u("vigX", "vigilante", "empX", { postIds: [] });
+    await u("postoA", "posto", "empA", { postIds: ["pA"], login: "portaria-a" });
+    await u("postoA2", "posto", "empA", { postIds: ["pA2"], login: "portaria-a2" });
+    await u("postoBloq", "posto", "empA", { postIds: ["pA"], status: "bloqueado" });
+    await u("postoX", "posto", "empX", { postIds: [] });
   });
 });
 
@@ -62,7 +65,7 @@ const geral = () => as("geral", "admin_geral");
 const admA = () => as("admA", "admin_empresa", "empA");
 const admB = () => as("admB", "admin_empresa", "empB");
 const supA = () => as("supA", "supervisor", "empA");
-const vigA = () => as("vigA", "vigilante", "empA");
+const postoA = () => as("postoA", "posto", "empA");
 
 describe("isolamento entre empresas", () => {
   it("admin da empresa A não lê empresa, contrato, posto ou ponto da empresa B (manipulando IDs)", async () => {
@@ -88,7 +91,7 @@ describe("isolamento entre empresas", () => {
   });
 
   it("claim role forjada não dá acesso de admin geral", async () => {
-    await assertFails(getDoc(doc(as("vigA", "admin_geral"), "companies/empB")));
+    await assertFails(getDoc(doc(as("postoA", "admin_geral"), "companies/empB")));
   });
 
   it("admin geral lê todas as empresas e a auditoria", async () => {
@@ -99,22 +102,30 @@ describe("isolamento entre empresas", () => {
 });
 
 describe("acesso por perfil e escopo de posto", () => {
-  it("vigilante lê somente o posto vinculado", async () => {
-    await assertSucceeds(getDoc(doc(vigA(), "posts/pA")));
-    await assertFails(getDoc(doc(vigA(), "posts/pA2")));
-    await assertSucceeds(getDoc(doc(vigA(), "checkpoints/kA")));
-    await assertFails(getDoc(doc(vigA(), "checkpoints/kA2")));
+  it("acesso do posto lê somente o posto vinculado", async () => {
+    await assertSucceeds(getDoc(doc(postoA(), "posts/pA")));
+    await assertFails(getDoc(doc(postoA(), "posts/pA2")));
+    await assertSucceeds(getDoc(doc(postoA(), "checkpoints/kA")));
+    await assertFails(getDoc(doc(postoA(), "checkpoints/kA2")));
   });
 
-  it("vigilante não lê contratos nem outros usuários", async () => {
-    await assertFails(getDoc(doc(vigA(), "contracts/cA")));
-    await assertFails(getDoc(doc(vigA(), "users/vigA2")));
-    await assertSucceeds(getDoc(doc(vigA(), "users/vigA")));
+  it("acesso do posto não lê contratos nem outros usuários", async () => {
+    await assertFails(getDoc(doc(postoA(), "contracts/cA")));
+    await assertFails(getDoc(doc(postoA(), "users/postoA2")));
+    await assertSucceeds(getDoc(doc(postoA(), "users/postoA")));
   });
 
-  it("vigilante lê só as próprias leituras de QR", async () => {
-    await assertSucceeds(getDoc(doc(vigA(), "scans/sVigA")));
-    await assertFails(getDoc(doc(vigA(), "scans/sOutro")));
+  it("acesso do posto lê as leituras de QR do próprio posto, não de outro", async () => {
+    await assertSucceeds(getDoc(doc(postoA(), "scans/sPostoA")));
+    await assertFails(getDoc(doc(postoA(), "scans/sPostoA2")));
+  });
+
+  it("acesso do posto lista os vigilantes do próprio posto (para identificar o plantão)", async () => {
+    await assertSucceeds(getDoc(doc(postoA(), "vigilantes/jose")));
+    await assertFails(getDoc(doc(postoA(), "vigilantes/maria")));
+    await assertFails(getDoc(doc(postoA(), "vigilantes/joao")));
+    await assertSucceeds(getDocs(query(collection(postoA(), "vigilantes"), where("companyId", "==", "empA"), where("postIds", "array-contains", "pA"))));
+    await assertFails(getDocs(query(collection(admB(), "vigilantes"), where("companyId", "==", "empA"))));
   });
 
   it("supervisor vê postos do contrato vinculado, não os demais", async () => {
@@ -124,8 +135,8 @@ describe("acesso por perfil e escopo de posto", () => {
     await assertFails(getDoc(doc(supA(), "contracts/cA")));
   });
 
-  it("supervisor lê vigilantes da empresa, mas não administradores", async () => {
-    await assertSucceeds(getDoc(doc(supA(), "users/vigA")));
+  it("supervisor lê acessos de posto da empresa, mas não administradores", async () => {
+    await assertSucceeds(getDoc(doc(supA(), "users/postoA")));
     await assertFails(getDoc(doc(supA(), "users/admA")));
   });
 
@@ -137,13 +148,13 @@ describe("acesso por perfil e escopo de posto", () => {
 
 describe("contas e empresas inativas", () => {
   it("usuário bloqueado não lê dados operacionais", async () => {
-    const db = as("vigBloq", "vigilante", "empA");
+    const db = as("postoBloq", "posto", "empA");
     await assertFails(getDoc(doc(db, "posts/pA")));
-    await assertSucceeds(getDoc(doc(db, "users/vigBloq"))); // vê o próprio perfil (status)
+    await assertSucceeds(getDoc(doc(db, "users/postoBloq"))); // vê o próprio perfil (status)
   });
 
   it("usuário de empresa bloqueada não lê dados da empresa", async () => {
-    await assertFails(getDoc(doc(as("vigX", "vigilante", "empX"), "companies/empX")));
+    await assertFails(getDoc(doc(as("postoX", "posto", "empX"), "companies/empX")));
   });
 
   it("não autenticado só lê o nome público do sistema", async () => {
@@ -161,12 +172,12 @@ describe("escritas pelo cliente são sempre negadas", () => {
   });
 
   it("usuário não altera o próprio perfil (escalonamento de privilégio)", async () => {
-    await assertFails(updateDoc(doc(vigA(), "users/vigA"), { role: "admin_geral" }));
-    await assertFails(updateDoc(doc(vigA(), "users/vigA"), { postIds: ["pA", "pA2"] }));
+    await assertFails(updateDoc(doc(postoA(), "users/postoA"), { role: "admin_geral" }));
+    await assertFails(updateDoc(doc(postoA(), "users/postoA"), { postIds: ["pA", "pA2"] }));
   });
 
-  it("vigilante não grava nem apaga leituras/auditoria", async () => {
-    await assertFails(setDoc(doc(vigA(), "scans/novo"), { companyId: "empA", postId: "pA", userId: "vigA" }));
+  it("acesso do posto não grava nem apaga leituras/auditoria", async () => {
+    await assertFails(setDoc(doc(postoA(), "scans/novo"), { companyId: "empA", postId: "pA", userId: "postoA" }));
     await assertFails(deleteDoc(doc(admA(), "auditLogs/l1")));
   });
 

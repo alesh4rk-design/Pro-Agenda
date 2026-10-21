@@ -7,7 +7,9 @@ import type { AuthClaims } from "@rondas/shared";
 
 export interface IdentityAdmin {
   findUidByEmail(email: string): Promise<string | null>;
-  createUser(input: { email: string; displayName: string }): Promise<string>;
+  /** Sem senha: o usuário define pelo e-mail de redefinição. Com senha: acesso do posto. */
+  createUser(input: { email: string; displayName: string; password?: string }): Promise<string>;
+  setPassword(uid: string, password: string): Promise<void>;
   setClaims(uid: string, claims: AuthClaims): Promise<void>;
   /** disabled=true bloqueia o login; revoke encerra as sessões existentes (refresh tokens). */
   setDisabled(uid: string, disabled: boolean): Promise<void>;
@@ -42,10 +44,12 @@ export function createRestIdentity(opts: IdentityOptions): IdentityAdmin {
       const r = await post<{ users?: { localId: string }[] }>("/accounts:lookup", { email: [email] });
       return r.users?.[0]?.localId ?? null;
     },
-    async createUser({ email, displayName }) {
-      // Conta criada sem senha: o usuário define a própria senha pelo e-mail de redefinição.
-      const r = await post<{ localId: string }>("/accounts", { email, displayName, emailVerified: false });
+    async createUser({ email, displayName, password }) {
+      const r = await post<{ localId: string }>("/accounts", { email, displayName, emailVerified: false, ...(password ? { password } : {}) });
       return r.localId;
+    },
+    async setPassword(uid, password) {
+      await post("/accounts:update", { localId: uid, password });
     },
     async setClaims(uid, claims) {
       await post("/accounts:update", { localId: uid, customAttributes: JSON.stringify(claims) });

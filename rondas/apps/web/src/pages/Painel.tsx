@@ -9,7 +9,7 @@ export function PainelPage() {
   const me = useMe();
   const { can } = useAuth();
   const [empresa, setEmpresa] = useState<string | null>(null);
-  const [postos, setPostos] = useState<{ id: string; nome: string }[]>([]);
+  const [postos, setPostos] = useState<{ id: string; nome: string }[] | null>(null);
 
   useEffect(() => {
     if (me.companyId) {
@@ -30,17 +30,19 @@ export function PainelPage() {
     <section className="stack">
       <div className="card">
         <p className="muted">Bem-vindo(a)</p>
-        <h1>{me.nome || me.email}</h1>
+        <h1>{me.nome || me.login || me.email}</h1>
         <p>
           <span className="badge">{ROLE_LABELS[me.role]}{me.funcao === "fiscal" ? " · fiscal" : ""}</span>
           {empresa && <span className="badge badge-soft">{empresa}</span>}
         </p>
       </div>
 
-      {(me.role === "vigilante" || me.role === "supervisor") && (
+      {(me.role === "posto" || me.role === "supervisor") && (
         <div className="card">
-          <h2>Seus postos</h2>
-          {postos.length === 0 && me.contractIds.length === 0 ? (
+          <h2>{me.role === "posto" ? "Posto" : "Seus postos"}</h2>
+          {postos === null ? (
+            <p className="muted">Carregando…</p>
+          ) : postos.length === 0 && me.contractIds.length === 0 ? (
             <p className="muted">Nenhum posto vinculado. Procure o administrador da empresa.</p>
           ) : (
             <ul className="list">
@@ -56,7 +58,7 @@ export function PainelPage() {
 
       {(can("usuario.gerir") || can("sistema.configurar")) && (
         <div className="grid-actions">
-          {can("usuario.gerir") && <Link className="btn btn-primary btn-lg" to="/usuarios">Gerenciar usuários</Link>}
+          {can("usuario.gerir") && <Link className="btn btn-primary btn-lg" to="/usuarios">Gerenciar acessos</Link>}
           {can("auditoria.ver") && <Link className="btn btn-lg" to="/auditoria">Ver auditoria</Link>}
           {can("sistema.configurar") && <Link className="btn btn-lg" to="/configuracoes">Configurar sistema</Link>}
         </div>

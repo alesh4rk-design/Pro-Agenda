@@ -41,15 +41,21 @@ export interface PublicConfig {
   updatedBy: string;
 }
 
-/** users/{uid} — perfil e escopo. Fonte da verdade do controle de acesso. */
+/**
+ * users/{uid} — contas com login. Fonte da verdade do controle de acesso.
+ * Perfil "posto": conta compartilhada de um posto (login + senha definidos pelo
+ * administrador da empresa); `email` é sintético (`login@postos.invalid`).
+ */
 export interface UserProfile extends Audited {
   uid: string;
   email: string;
+  /** Somente para o perfil "posto". */
+  login?: string | null;
   nome: string;
   role: Role;
   funcao?: SupervisorFuncao;
   companyId: string | null;
-  /** Postos aos quais o supervisor/vigilante tem acesso. */
+  /** Postos do supervisor; para o perfil "posto", exatamente um. */
   postIds: string[];
   /** Contratos aos quais o supervisor tem acesso (todos os postos do contrato). */
   contractIds: string[];
@@ -77,6 +83,20 @@ export interface AuditLog {
 }
 
 // ---------------------------------------------------------------- Etapa 2
+
+/**
+ * vigilantes/{id} — cadastro de vigilantes SEM login. Na execução, o acesso do
+ * posto informa quem está de plantão; os relatórios por vigilante usam esse dado.
+ * É uma identificação declarada (não autenticada), e os relatórios a apresentam assim.
+ */
+export interface Vigilante extends Audited {
+  id: string;
+  companyId: string;
+  nome: string;
+  matricula?: string;
+  postIds: string[];
+  status: "ativo" | "inativo";
+}
 
 /** companies/{id} */
 export interface Company extends Audited {
@@ -263,6 +283,7 @@ export interface PlannedRound {
   startedAt: Ts | null;
   completedAt: Ts | null;
   executorUid: string | null;
+  vigilanteId: string | null;
 }
 
 // ---------------------------------------------------------------- Etapa 5
@@ -275,7 +296,10 @@ export interface Scan {
   postId: string;
   roundId: string;
   checkpointId: string;
+  /** Conta que fez a leitura (acesso do posto). */
   userId: string;
+  /** Vigilante de plantão informado pelo acesso do posto (declarado). */
+  vigilanteId: string | null;
   serverReceivedAt: Ts;
   deviceReportedAt: Ts;
   coletadoOffline: boolean;
@@ -327,7 +351,8 @@ export interface Incident extends Audited {
   contractId: string;
   postId: string;
   ocorridaEm: Ts;
-  vigilanteUid: string;
+  registradoPorUid: string;
+  vigilanteId: string | null;
   categoria: string;
   descricao: string;
   gravidade: IncidentSeverity;

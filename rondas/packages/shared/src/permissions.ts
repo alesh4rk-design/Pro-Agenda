@@ -35,7 +35,7 @@ export const PERMISSIONS = [
   "relatorio.ver",
   "mapa.ver",
   "ocorrencia.gerir",
-  // Vigilante
+  // Acesso do posto
   "ronda.executar",
   "ocorrencia.registrar",
   "ronda.ver_proprias",
@@ -78,7 +78,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "mapa.ver",
     "ocorrencia.gerir",
   ],
-  vigilante: ["ronda.executar", "ocorrencia.registrar", "ronda.ver_proprias"],
+  posto: ["ronda.executar", "ocorrencia.registrar", "ronda.ver_proprias"],
 };
 
 /** Usuário autenticado, montado pelo backend a partir do token + documento users/{uid}. */
@@ -128,7 +128,7 @@ export interface ResourceScope {
  * - admin_empresa: somente a própria empresa.
  * - supervisor: própria empresa E (posto vinculado OU contrato vinculado).
  *   Recursos de nível de empresa (sem posto/contrato) não são acessíveis.
- * - vigilante: própria empresa E posto vinculado.
+ * - posto: própria empresa E o posto vinculado.
  */
 export function canAccessScope(actor: Actor, scope: ResourceScope): boolean {
   if (!isActorActive(actor)) return false;
@@ -137,7 +137,7 @@ export function canAccessScope(actor: Actor, scope: ResourceScope): boolean {
   if (actor.role === "admin_empresa") return true;
 
   const postOk = !!scope.postId && actor.postIds.includes(scope.postId);
-  if (actor.role === "vigilante") return postOk;
+  if (actor.role === "posto") return postOk;
 
   const contractOk = !!scope.contractId && actor.contractIds.includes(scope.contractId);
   return postOk || contractOk;
@@ -162,10 +162,10 @@ export interface UserTarget {
  * nem outro admin_empresa, e nunca atua fora da própria empresa.
  */
 const MANAGEABLE_ROLES: Record<Role, readonly Role[]> = {
-  admin_geral: ["admin_geral", "admin_empresa", "supervisor", "vigilante"],
-  admin_empresa: ["supervisor", "vigilante"],
+  admin_geral: ["admin_geral", "admin_empresa", "supervisor", "posto"],
+  admin_empresa: ["supervisor", "posto"],
   supervisor: [],
-  vigilante: [],
+  posto: [],
 };
 
 export function canManageUser(actor: Actor, target: UserTarget): boolean {

@@ -8,6 +8,7 @@ export interface Me {
   uid: string;
   nome: string;
   email: string;
+  login: string | null;
   role: Role;
   funcao: SupervisorFuncao | null;
   companyId: string | null;

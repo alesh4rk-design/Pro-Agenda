@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ROLES, SUPERVISOR_FUNCOES, USER_STATUSES } from "./roles.js";
+import { POSTO_LOGIN_DOMAIN, POSTO_LOGIN_RE, ROLES, SUPERVISOR_FUNCOES, USER_STATUSES } from "./roles.js";
 
 /** Identificadores de documentos: evita path traversal e IDs malformados. */
 export const docId = z
@@ -9,6 +9,15 @@ export const docId = z
   .regex(/^[A-Za-z0-9_-]+$/, "Identificador inválido");
 
 const nome = z.string().trim().min(2, "Informe o nome").max(120);
+
+export const postoLogin = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(POSTO_LOGIN_RE, "Login: 3 a 40 caracteres (letras minúsculas, números, ponto, hífen ou sublinhado)");
+
+/** Senha definida pelo administrador para o acesso do posto. */
+export const senha = z.string().min(8, "A senha deve ter ao menos 8 caracteres").max(128);
 
 /**
  * Coerência entre perfil, empresa e vínculos. Usada no cadastro e também no
@@ -37,12 +46,19 @@ export function userShapeIssues(v: {
   if (v.funcao && v.role !== "supervisor") {
     issues.push({ path: ["funcao"], message: "Função só se aplica a supervisores" });
   }
+  if (v.role === "posto" && v.postIds.length !== 1) {
+    issues.push({ path: ["postIds"], message: "O acesso do posto deve estar vinculado a exatamente um posto" });
+  }
   return issues;
 }
 
 export const createUserSchema = z
   .object({
-    email: z.string().trim().toLowerCase().pipe(z.email("E-mail inválido")).pipe(z.string().max(254)),
+    /** Obrigatório para administradores e supervisores (recebem o link para definir a senha). */
+    email: z.string().trim().toLowerCase().pipe(z.email("E-mail inválido")).pipe(z.string().max(254)).optional(),
+    /** Somente para o acesso do posto: login e senha definidos pelo administrador. */
+    login: postoLogin.optional(),
+    senha: senha.optional(),
     nome,
     role: z.enum(ROLES),
     funcao: z.enum(SUPERVISOR_FUNCOES).optional(),
@@ -55,6 +71,17 @@ export const createUserSchema = z
   .strict()
   .superRefine((v, ctx) => {
     for (const issue of userShapeIssues(v)) ctx.addIssue({ code: "custom", ...issue });
+    if (v.role === "posto") {
+      if (!v.login) ctx.addIssue({ code: "custom", path: ["login"], message: "Informe o login do posto" });
+      if (!v.senha) ctx.addIssue({ code: "custom", path: ["senha"], message: "Informe a senha do posto" });
+      if (v.email) ctx.addIssue({ code: "custom", path: ["email"], message: "O acesso do posto não usa e-mail" });
+    } else {
+      if (!v.email) ctx.addIssue({ code: "custom", path: ["email"], message: "Informe o e-mail" });
+      if (v.email?.endsWith(`@${POSTO_LOGIN_DOMAIN}`)) ctx.addIssue({ code: "custom", path: ["email"], message: "E-mail inválido" });
+      if (v.login || v.senha) {
+        ctx.addIssue({ code: "custom", path: ["senha"], message: "Login e senha são definidos só para o acesso do posto" });
+      }
+    }
   });
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
@@ -73,6 +100,11 @@ export const updateUserSchema = z
   .strict()
   .refine((v) => Object.keys(v).some((k) => k !== "motivo"), "Nenhuma alteração informada");
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+/** Redefinição de senha do acesso do posto pelo administrador. */
+export const resetPostoPasswordSchema = z
+  .object({ senha, motivo: z.string().trim().max(500).optional() })
+  .strict();
 
 export const systemConfigSchema = z
   .object({

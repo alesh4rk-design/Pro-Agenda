@@ -6,7 +6,8 @@
  * Uso: com `npm run emulators` rodando em outro terminal:
  *   npm run seed:emulator
  *
- * Etapa 1: plataforma, empresa, contrato, posto e usuários de cada perfil.
+ * Etapa 1: plataforma, empresa, contrato, postos, acessos (um por posto),
+ * supervisor e vigilantes sem login.
  * Pontos de ronda, checklists, programação, rondas e ocorrências serão
  * adicionados a este script nas etapas correspondentes.
  */
@@ -56,6 +57,20 @@ await db.doc("contracts/demo-contrato").set({
   status: "ativo",
   ...audit,
 });
+await db.doc("posts/demo-posto-garagem").set({
+  id: "demo-posto-garagem",
+  companyId: "demo-empresa",
+  contractId: "demo-contrato",
+  nome: "Garagem (DEMO)",
+  endereco: "Endereço fictício, Rio de Janeiro - RJ",
+  geo: { lat: -22.9071, lng: -43.1733 },
+  timezone: "America/Sao_Paulo",
+  diasOperacao: [1, 2, 3, 4, 5],
+  horarioFuncionamento: null,
+  shiftDateRule: "inicio_turno",
+  status: "ativo",
+  ...audit,
+});
 await db.doc("posts/demo-posto").set({
   id: "demo-posto",
   companyId: "demo-empresa",
@@ -75,12 +90,14 @@ const usuarios = [
   { email: "admin@demo.local", nome: "Admin Geral (DEMO)", role: "admin_geral", companyId: null },
   { email: "empresa@demo.local", nome: "Admin Empresa (DEMO)", role: "admin_empresa", companyId: "demo-empresa" },
   { email: "supervisor@demo.local", nome: "Supervisor (DEMO)", role: "supervisor", funcao: "supervisor", companyId: "demo-empresa", postIds: ["demo-posto"] },
-  { email: "vigilante1@demo.local", nome: "Vigilante Um (DEMO)", role: "vigilante", companyId: "demo-empresa", postIds: ["demo-posto"] },
-  { email: "vigilante2@demo.local", nome: "Vigilante Dois (DEMO)", role: "vigilante", companyId: "demo-empresa", postIds: ["demo-posto"] },
+  // Acessos de posto: login (sem e-mail real) + senha definida pelo administrador.
+  { login: "portaria-demo", nome: "Portaria Principal (DEMO)", role: "posto", companyId: "demo-empresa", postIds: ["demo-posto"] },
+  { login: "garagem-demo", nome: "Garagem (DEMO)", role: "posto", companyId: "demo-empresa", postIds: ["demo-posto-garagem"] },
   { email: "outra@demo.local", nome: "Admin Outra Empresa (DEMO)", role: "admin_empresa", companyId: "demo-outra" },
 ];
 
 for (const u of usuarios) {
+  if (u.login) u.email = `${u.login}@postos.invalid`;
   let uid;
   try {
     uid = (await auth.getUserByEmail(u.email)).uid;
@@ -91,6 +108,7 @@ for (const u of usuarios) {
   await db.doc(`users/${uid}`).set({
     uid,
     email: u.email,
+    login: u.login ?? null,
     nome: u.nome,
     role: u.role,
     funcao: u.funcao ?? null,
@@ -100,6 +118,16 @@ for (const u of usuarios) {
     status: "ativo",
     ...audit,
   });
-  console.log(`${u.role.padEnd(14)} ${u.email}`);
+  console.log(`${u.role.padEnd(14)} ${u.login ?? u.email}`);
 }
-console.log(`\nSenha de todos os usuários de demonstração: ${SENHA}`);
+
+// Vigilantes: cadastro sem login (identificados pelo acesso do posto na execução da ronda).
+const vigilantes = [
+  { id: "demo-vig-1", nome: "Vigilante Um (DEMO)", matricula: "D-001", postIds: ["demo-posto"] },
+  { id: "demo-vig-2", nome: "Vigilante Dois (DEMO)", matricula: "D-002", postIds: ["demo-posto", "demo-posto-garagem"] },
+];
+for (const v of vigilantes) {
+  await db.doc(`vigilantes/${v.id}`).set({ ...v, companyId: "demo-empresa", status: "ativo", ...audit });
+}
+console.log(`vigilantes     ${vigilantes.length} cadastrados sem login`);
+console.log(`\nSenha de todos os acessos de demonstração: ${SENHA}`);

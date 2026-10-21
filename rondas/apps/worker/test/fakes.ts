@@ -39,16 +39,19 @@ export class MemoryFirestore implements FirestoreClient {
 }
 
 export class FakeIdentity implements IdentityAdmin {
-  users = new Map<string, { email: string; claims?: AuthClaims; disabled: boolean; revokedAt?: number }>();
+  users = new Map<string, { email: string; password?: string; claims?: AuthClaims; disabled: boolean; revokedAt?: number }>();
   private seq = 0;
   async findUidByEmail(email: string) {
     for (const [uid, u] of this.users) if (u.email.toLowerCase() === email.toLowerCase()) return uid;
     return null;
   }
-  async createUser({ email }: { email: string }) {
+  async createUser({ email, password }: { email: string; password?: string }) {
     const uid = `novo${++this.seq}`;
-    this.users.set(uid, { email, disabled: false });
+    this.users.set(uid, { email, password, disabled: false });
     return uid;
+  }
+  async setPassword(uid: string, password: string) {
+    this.users.get(uid)!.password = password;
   }
   async setClaims(uid: string, claims: AuthClaims) {
     this.users.get(uid)!.claims = claims;
@@ -96,20 +99,20 @@ export function setup() {
   db.docs.set("posts/pB", { companyId: "empB", contractId: "cB" });
   const user = (uid: string, role: string, companyId: string | null, extra: DocData = {}) => {
     db.docs.set(`users/${uid}`, { uid, role, companyId, status: "ativo", postIds: [], contractIds: [], nome: uid, email: `${uid}@teste.local`, createdAt: now, ...extra });
-    identity.users.set(uid, { email: `${uid}@teste.local`, disabled: false, claims: companyId ? { role: role as never, cid: companyId } : { role: role as never } });
+    identity.users.set(uid, { email: (extra.email as string) ?? `${uid}@teste.local`, disabled: false, claims: companyId ? { role: role as never, cid: companyId } : { role: role as never } });
   };
   user("geral", "admin_geral", null);
   user("admA", "admin_empresa", "empA");
   user("admB", "admin_empresa", "empB");
   user("supA", "supervisor", "empA", { postIds: ["pA"], funcao: "supervisor" });
-  user("vigA", "vigilante", "empA", { postIds: ["pA"] });
+  user("postoA", "posto", "empA", { postIds: ["pA"], login: "portaria-a", email: "portaria-a@postos.invalid" });
 
   const tokens = {
     geral: "tok|geral|admin_geral|",
     admA: "tok|admA|admin_empresa|empA",
     admB: "tok|admB|admin_empresa|empB",
     supA: "tok|supA|supervisor|empA",
-    vigA: "tok|vigA|vigilante|empA",
+    postoA: "tok|postoA|posto|empA",
   };
 
   async function call(method: string, path: string, token?: string, body?: unknown, headers: Record<string, string> = {}) {

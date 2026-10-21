@@ -74,10 +74,10 @@ describe("Worker + emuladores", () => {
     expect(r.body.role).toBe("admin_geral");
   });
 
-  it("cadastra vigilante: conta no Auth com claims, perfil e auditoria no Firestore", async () => {
-    const email = `vig-${run}@demo.local`;
+  it("cria acesso do posto (login + senha), entra pelo login, redefine senha e bloqueia", async () => {
+    const login = `portaria-${run}`;
     const key = crypto.randomUUID();
-    const body = { email, nome: "Vigilante Demo", role: "vigilante", companyId: `emp-${run}`, postIds: [`posto-${run}`] };
+    const body = { login, senha: "senha-inicial-1", nome: "Portaria Demo", role: "posto", companyId: `emp-${run}`, postIds: [`posto-${run}`] };
     const r = await api("POST", "/v1/users", geralToken, body, key);
     expect(r.status).toBe(201);
     const uid = r.body.uid as string;
@@ -87,9 +87,10 @@ describe("Worker + emuladores", () => {
       headers: { Authorization: "Bearer owner", "Content-Type": "application/json" },
       body: JSON.stringify({ localId: [uid] }),
     }).then((x) => x.json() as Promise<any>);
-    expect(JSON.parse(lookup.users[0].customAttributes)).toEqual({ role: "vigilante", cid: `emp-${run}` });
+    expect(lookup.users[0].email).toBe(`${login}@postos.invalid`);
+    expect(JSON.parse(lookup.users[0].customAttributes)).toEqual({ role: "posto", cid: `emp-${run}` });
 
-    expect(await deps.db.getDoc(`users/${uid}`)).toMatchObject({ role: "vigilante", status: "ativo" });
+    expect(await deps.db.getDoc(`users/${uid}`)).toMatchObject({ role: "posto", login, status: "ativo" });
     const logs = await deps.db.query("auditLogs", [{ field: "targetId", op: "EQUAL", value: uid }], 10);
     expect(logs).toHaveLength(1);
     expect(logs[0]!.data.action).toBe("usuario.criar");
@@ -99,22 +100,37 @@ describe("Worker + emuladores", () => {
     expect(again.status).toBe(201);
     expect(again.body.uid).toBe(uid);
 
-    // Recuperação de senha: o emulador registra o código de redefinição.
+    // O posto entra com o login (convertido no e-mail sintético) e a senha definida pelo admin.
+    const postoToken = await signIn(`${login}@postos.invalid`, "senha-inicial-1");
+    const me = await api("GET", "/v1/me", postoToken);
+    expect(me.status).toBe(200);
+    expect(me.body.role).toBe("posto");
+
+    // Admin redefine a senha: a antiga deixa de funcionar, a nova funciona.
+    const reset = await api("POST", `/v1/users/${uid}/senha`, geralToken, { senha: "senha-nova-2" });
+    expect(reset.status).toBe(200);
+    await expect(signIn(`${login}@postos.invalid`, "senha-inicial-1")).rejects.toThrow(/INVALID/);
+    const novoToken = await signIn(`${login}@postos.invalid`, "senha-nova-2");
+    expect((await api("GET", "/v1/me", novoToken)).status).toBe(200);
+
+    // Bloqueio: conta desativada no Auth e token atual recusado.
+    const bloq = await api("PATCH", `/v1/users/${uid}`, geralToken, { status: "bloqueado" });
+    expect(bloq.status).toBe(200);
+    expect((await api("GET", "/v1/me", novoToken)).status).toBe(403);
+    await expect(signIn(`${login}@postos.invalid`, "senha-nova-2")).rejects.toThrow(/USER_DISABLED/);
+  });
+
+  it("supervisor (com e-mail) define a senha pelo link de recuperação", async () => {
+    const email = `sup-${run}@demo.local`;
+    const body = { email, nome: "Supervisor Demo", role: "supervisor", companyId: `emp-${run}`, postIds: [`posto-${run}`] };
+    expect((await api("POST", "/v1/users", geralToken, body, crypto.randomUUID())).status).toBe(201);
     await authRest("accounts:sendOobCode", { requestType: "PASSWORD_RESET", email });
     const codes = await fetch(`http://${AUTH}/emulator/v1/projects/${PROJECT}/oobCodes`).then((x) => x.json() as Promise<any>);
     const code = codes.oobCodes.find((c: any) => c.email === email && c.requestType === "PASSWORD_RESET");
     expect(code).toBeDefined();
     await authRest("accounts:resetPassword", { oobCode: code.oobCode, newPassword: "nova-senha-456" });
-    const vigToken = await signIn(email, "nova-senha-456");
-    const me = await api("GET", "/v1/me", vigToken);
-    expect(me.status).toBe(200);
-    expect(me.body.role).toBe("vigilante");
-
-    // Bloqueio: conta desativada no Auth e token atual recusado.
-    const bloq = await api("PATCH", `/v1/users/${uid}`, geralToken, { status: "bloqueado" });
-    expect(bloq.status).toBe(200);
-    expect((await api("GET", "/v1/me", vigToken)).status).toBe(403);
-    await expect(signIn(email, "nova-senha-456")).rejects.toThrow(/USER_DISABLED/);
+    const supToken = await signIn(email, "nova-senha-456");
+    expect((await api("GET", "/v1/me", supToken)).body.role).toBe("supervisor");
   });
 
   it("altera o nome do sistema", async () => {
