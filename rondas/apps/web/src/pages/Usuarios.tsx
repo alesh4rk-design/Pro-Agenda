@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useMe } from "../auth/AuthProvider";
+import { CompanyPicker, useCompanyScope } from "../components/CompanyPicker";
 import { api, errorMessage } from "../lib/api";
 import { auth, db } from "../lib/firebase";
 
@@ -35,26 +36,14 @@ interface Option {
 
 export function UsuariosPage() {
   const me = useMe();
-  const isGeral = me.role === "admin_geral";
-  const [companies, setCompanies] = useState<Option[]>([]);
-  const [companyId, setCompanyId] = useState<string>(me.companyId ?? "");
+  const scope = useCompanyScope();
+  const { isGeral, companyId } = scope;
   const [posts, setPosts] = useState<Option[]>([]);
   const [rows, setRows] = useState<UserRow[]>([]);
   const [cursor, setCursor] = useState<QueryDocumentSnapshot | null>(null);
   const [fim, setFim] = useState(false);
   const [erro, setErro] = useState("");
   const [novo, setNovo] = useState(false);
-
-  useEffect(() => {
-    if (!isGeral) return;
-    getDocs(query(collection(db, "companies"), orderBy("nome"), limit(100)))
-      .then((s) => {
-        const list = s.docs.map((d) => ({ id: d.id, nome: (d.data().nome as string) ?? d.id }));
-        setCompanies(list);
-        setCompanyId((c) => c || list[0]?.id || GERAIS);
-      })
-      .catch(() => setErro("Não foi possível carregar as empresas."));
-  }, [isGeral]);
 
   useEffect(() => {
     if (!companyId || companyId === GERAIS) return setPosts([]);
@@ -116,15 +105,7 @@ export function UsuariosPage() {
         acessos individuais para supervisores e fiscais.
       </p>
 
-      {isGeral && (
-        <label>
-          Empresa
-          <select value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
-            {companies.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            <option value={GERAIS}>— Administradores gerais —</option>
-          </select>
-        </label>
-      )}
+      <CompanyPicker scope={scope} extraOptions={[{ value: GERAIS, label: "— Administradores gerais —" }]} />
 
       {novo && companyId && (
         <NovoAcesso

@@ -248,8 +248,8 @@ referência 60 min · segunda a sexta.
 | Etapa | Entrega | Status |
 |---|---|---|
 | 1 | Arquitetura, modelo de dados, autenticação, RBAC, regras, auditoria, idempotência, PWA base, telas de login/recuperação/usuários/auditoria/configuração | **Concluída** — ver [ETAPA-1.md](ETAPA-1.md) |
-| 2 | CRUD de empresas, contratos e postos | Próxima |
-| 3 | Pontos de ronda, QR (token + hash, impressão), checklists versionados | |
+| 2 | Cadastro de empresas, contratos e postos (bloqueio/suspensão/encerramento com motivo, situação operacional) | **Concluída** — ver [ETAPA-2.md](ETAPA-2.md) |
+| 3 | Pontos de ronda, QR (token + hash, impressão), checklists versionados | Próxima |
 | 4 | Gerador de programação (modelos A–D), prévia com conflitos, cron idempotente, virada de dia | |
 | 5 | App do posto: leitor de QR, GPS com política, checklist, fotos comprimidas → R2, fila offline | |
 | 6 | Cron de status, atrasos, não execução, justificativas | |

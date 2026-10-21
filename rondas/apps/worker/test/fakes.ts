@@ -28,9 +28,11 @@ export class MemoryFirestore implements FirestoreClient {
       else this.docs.set(w.path, structuredClone(w.data));
     }
   }
-  async query(collection: string) {
+  async query(collection: string, filters: { field: string; op: string; value: unknown }[] = [], max = 500) {
     return [...this.docs.entries()]
       .filter(([p]) => p.startsWith(`${collection}/`) && p.split("/").length === 2)
+      .filter(([, d]) => filters.every((f) => f.op !== "EQUAL" || d[f.field] === f.value))
+      .slice(0, max)
       .map(([p, data]) => ({ id: p.split("/")[1]!, data }));
   }
   collection(name: string) {

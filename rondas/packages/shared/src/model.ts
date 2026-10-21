@@ -88,7 +88,7 @@ export interface AuditLog {
 export interface Company extends Audited {
   id: string;
   nome: string;
-  cnpj?: string;
+  cnpj: string | null;
   responsaveis: { nome: string; telefone?: string; email?: string }[];
   status: CompanyStatus;
   permissoesAdmin: CompanyAdminPermissions;
@@ -107,7 +107,9 @@ export interface Contract extends Audited {
   vigenciaInicio: string; // YYYY-MM-DD
   vigenciaFim: string | null;
   status: ContractStatus;
-  retencaoFotosDias?: number;
+  /** null = usa a retenção da empresa. */
+  retencaoFotosDias: number | null;
+  observacoes?: string;
 }
 
 /**
@@ -130,6 +132,7 @@ export interface Post extends Audited {
   horarioFuncionamento: { inicio: string; fim: string } | null; // "HH:mm"
   shiftDateRule: ShiftDateRule;
   status: ContractStatus;
+  instrucoes?: string;
 }
 
 // ---------------------------------------------------------------- Etapa 3

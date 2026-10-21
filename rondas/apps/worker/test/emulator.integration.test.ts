@@ -133,6 +133,55 @@ describe("Worker + emuladores", () => {
     expect((await api("GET", "/v1/me", supToken)).body.role).toBe("supervisor");
   });
 
+  it("cadastra empresa → contrato → posto e bloqueia a empresa", async () => {
+    const emp = await api("POST", "/v1/companies", geralToken, {
+      nome: `Empresa Integração ${run}`,
+      cnpj: "11.222.333/0001-81",
+      responsaveis: [{ nome: "Fulano", telefone: "(21) 99999-0000" }],
+      retencaoFotosDias: 15,
+    }, crypto.randomUUID());
+    expect(emp.status).toBe(201);
+    const companyId = emp.body.id as string;
+
+    const ct = await api("POST", "/v1/contracts", geralToken, { companyId, nome: "Contrato X", cliente: "Cliente X", vigenciaInicio: "2026-01-01" }, crypto.randomUUID());
+    expect(ct.status).toBe(201);
+
+    const pt = await api("POST", "/v1/posts", geralToken, {
+      contractId: ct.body.id,
+      nome: "Portaria X",
+      endereco: "Rua X, 1 - Rio de Janeiro",
+      geo: { lat: -22.9068, lng: -43.1729 },
+      diasOperacao: [5, 1, 3],
+      horarioFuncionamento: { inicio: "18:00", fim: "08:00" },
+    }, crypto.randomUUID());
+    expect(pt.status).toBe(201);
+
+    expect(await deps.db.getDoc(`companies/${companyId}`)).toMatchObject({
+      responsaveis: [{ nome: "Fulano", telefone: "(21) 99999-0000" }],
+      permissoesAdmin: { gerirContratos: true, gerirPostos: true },
+      retencaoFotosDias: 15,
+    });
+    expect(await deps.db.getDoc(`posts/${pt.body.id}`)).toMatchObject({
+      companyId,
+      contractId: ct.body.id,
+      geo: { lat: -22.9068, lng: -43.1729 },
+      diasOperacao: [1, 3, 5],
+      horarioFuncionamento: { inicio: "18:00", fim: "08:00" },
+      timezone: "America/Sao_Paulo",
+    });
+
+    const edit = await api("PATCH", `/v1/posts/${pt.body.id}`, geralToken, { geo: null, nome: "Portaria X2" });
+    expect([...edit.body.campos].sort()).toEqual(["geo", "nome"]);
+    expect((await deps.db.getDoc(`posts/${pt.body.id}`))!.geo).toBeNull();
+
+    const bloq = await api("PATCH", `/v1/companies/${companyId}`, geralToken, { status: "bloqueada", motivo: "Teste" });
+    expect(bloq.status).toBe(200);
+    const novoContrato = await api("POST", "/v1/contracts", geralToken, { companyId, nome: "Contrato Y", cliente: "Cliente Y", vigenciaInicio: "2026-01-01" }, crypto.randomUUID());
+    expect(novoContrato.status).toBe(409);
+    const logs = await deps.db.query("auditLogs", [{ field: "companyId", op: "EQUAL", value: companyId }], 20);
+    expect(logs.map((l) => l.data.action).sort()).toEqual(["contrato.criar", "empresa.criar", "empresa.status.bloqueada", "posto.criar", "posto.editar"]);
+  });
+
   it("altera o nome do sistema", async () => {
     const r = await api("PUT", "/v1/config/sistema", geralToken, { nomeSistema: `Rondas ${run}` });
     expect(r.status).toBe(200);

@@ -7,8 +7,11 @@ import { useSystemName } from "./lib/hooks";
 import { AcessoNegadoPage } from "./pages/AcessoNegado";
 import { AuditoriaPage } from "./pages/Auditoria";
 import { ConfiguracoesPage } from "./pages/Configuracoes";
+import { ContratosPage } from "./pages/Contratos";
+import { EmpresasPage } from "./pages/Empresas";
 import { LoginPage } from "./pages/Login";
 import { PainelPage } from "./pages/Painel";
+import { PostosPage } from "./pages/Postos";
 import { RecuperarSenhaPage } from "./pages/RecuperarSenha";
 import { UsuariosPage } from "./pages/Usuarios";
 
@@ -39,6 +42,9 @@ function Root() {
     <Shell systemName={systemName}>
       <Routes>
         <Route path="/" element={<PainelPage />} />
+        <Route path="/empresas" element={<Require permission="empresa.gerir"><EmpresasPage /></Require>} />
+        <Route path="/contratos" element={<Require permission="contrato.gerir"><ContratosPage /></Require>} />
+        <Route path="/postos" element={<Require permission="posto.gerir"><PostosPage /></Require>} />
         <Route path="/usuarios" element={<Require permission="usuario.gerir"><UsuariosPage /></Require>} />
         <Route path="/auditoria" element={<Require permission="auditoria.ver"><AuditoriaPage /></Require>} />
         <Route path="/configuracoes" element={<Require permission="sistema.configurar"><ConfiguracoesPage systemName={systemName} /></Require>} />

@@ -6,7 +6,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, where, deleteDoc } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
 let env: RulesTestEnvironment;
@@ -132,6 +132,24 @@ describe("acesso por perfil e escopo de posto", () => {
   it("admin da empresa lê usuários da própria empresa, não de outra", async () => {
     await assertSucceeds(getDocs(query(collection(admA(), "users"), where("companyId", "==", "empA"))));
     await assertFails(getDocs(query(collection(admB(), "users"), where("companyId", "==", "empA"))));
+  });
+});
+
+describe("listas das telas de cadastro (Etapa 2)", () => {
+  it("admin geral lista todas as empresas; admin da empresa não", async () => {
+    await assertSucceeds(getDocs(query(collection(geral(), "companies"), orderBy("nome"))));
+    await assertFails(getDocs(query(collection(admA(), "companies"), orderBy("nome"))));
+  });
+
+  it("admin da empresa lista contratos e postos da própria empresa (com filtro por contrato)", async () => {
+    await assertSucceeds(getDocs(query(collection(admA(), "contracts"), where("companyId", "==", "empA"), orderBy("nome"))));
+    await assertSucceeds(getDocs(query(collection(admA(), "posts"), where("companyId", "==", "empA"), where("contractId", "==", "cA"), orderBy("nome"))));
+    await assertFails(getDocs(query(collection(admA(), "contracts"), where("companyId", "==", "empB"))));
+  });
+
+  it("acesso do posto não lista contratos nem postos da empresa", async () => {
+    await assertFails(getDocs(query(collection(postoA(), "contracts"), where("companyId", "==", "empA"))));
+    await assertFails(getDocs(query(collection(postoA(), "posts"), where("companyId", "==", "empA"))));
   });
 });
 

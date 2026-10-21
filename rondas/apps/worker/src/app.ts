@@ -2,6 +2,7 @@ import { bearerToken, loadActor } from "./auth.js";
 import type { Ctx, Deps } from "./context.js";
 import { ApiError, corsHeaders, errorResponse, json } from "./http.js";
 import { allow } from "./rateLimit.js";
+import { createCompany, createContract, createPost, updateCompany, updateContract, updatePost } from "./routes/cadastros.js";
 import { putSystemConfig } from "./routes/config.js";
 import { getMe } from "./routes/me.js";
 import { createUser, resetPostoPassword, updateUser } from "./routes/users.js";
@@ -28,6 +29,12 @@ const ROUTES: Route[] = [
   route("POST", "/v1/users", createUser),
   route("PATCH", "/v1/users/:uid", updateUser),
   route("POST", "/v1/users/:uid/senha", resetPostoPassword),
+  route("POST", "/v1/companies", createCompany),
+  route("PATCH", "/v1/companies/:id", updateCompany),
+  route("POST", "/v1/contracts", createContract),
+  route("PATCH", "/v1/contracts/:id", updateContract),
+  route("POST", "/v1/posts", createPost),
+  route("PATCH", "/v1/posts/:id", updatePost),
 ];
 
 /** Limites por usuário/minuto (por isolate). */

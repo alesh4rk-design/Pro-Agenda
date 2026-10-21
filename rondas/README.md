@@ -8,6 +8,7 @@ autenticação no Firebase Authentication, dados no Cloud Firestore e fotos no C
 
 - Arquitetura, coleções, permissões, fluxo de autenticação, modelo de dados e plano: [docs/ARQUITETURA.md](docs/ARQUITETURA.md)
 - O que a Etapa 1 entrega e como foi testada: [docs/ETAPA-1.md](docs/ETAPA-1.md)
+- Etapa 2 (empresas, contratos e postos): [docs/ETAPA-2.md](docs/ETAPA-2.md)
 
 ## Estrutura
 

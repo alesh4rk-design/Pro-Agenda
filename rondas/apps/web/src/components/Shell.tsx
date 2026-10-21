@@ -1,6 +1,6 @@
 import { ROLE_LABELS, type Permission } from "@rondas/shared";
-import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { type ReactNode, useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAuth, useMe } from "../auth/AuthProvider";
 import { useOnline } from "../lib/hooks";
 
@@ -14,6 +14,9 @@ interface NavItem {
 // Somente telas já implementadas aparecem no menu (sem botões que não funcionam).
 const NAV: NavItem[] = [
   { to: "/", label: "Painel", icon: "◉" },
+  { to: "/empresas", label: "Empresas", icon: "🏢", permission: "empresa.gerir" },
+  { to: "/contratos", label: "Contratos", icon: "📄", permission: "contrato.gerir" },
+  { to: "/postos", label: "Postos", icon: "📍", permission: "posto.gerir" },
   { to: "/usuarios", label: "Acessos", icon: "👥", permission: "usuario.gerir" },
   { to: "/auditoria", label: "Auditoria", icon: "🧾", permission: "auditoria.ver" },
   { to: "/configuracoes", label: "Sistema", icon: "⚙", permission: "sistema.configurar" },
@@ -24,6 +27,13 @@ export function Shell({ systemName, children }: { systemName: string; children: 
   const me = useMe();
   const online = useOnline();
   const items = NAV.filter((i) => !i.permission || can(i.permission));
+  // Celular: até 4 atalhos na barra inferior; o resto fica em "Mais".
+  const MAX_BOTTOM = 4;
+  const bottom = items.length > MAX_BOTTOM + 1 ? items.slice(0, MAX_BOTTOM) : items;
+  const extra = items.length > MAX_BOTTOM + 1 ? items.slice(MAX_BOTTOM) : [];
+  const [maisAberto, setMaisAberto] = useState(false);
+  const location = useLocation();
+  useEffect(() => setMaisAberto(false), [location.pathname]);
 
   return (
     <div className="shell">
@@ -56,16 +66,33 @@ export function Shell({ systemName, children }: { systemName: string; children: 
         </nav>
         <main className="content">{children}</main>
       </div>
+      {maisAberto && (
+        <div className="more-sheet" role="dialog" aria-label="Mais opções">
+          {extra.map((i) => (
+            <NavLink key={i.to} to={i.to} className="navlink">
+              <span aria-hidden>{i.icon}</span> {i.label}
+            </NavLink>
+          ))}
+          <div className="muted small">{me.nome || me.login || me.email} · {ROLE_LABELS[me.role]}</div>
+          <button className="btn btn-ghost" onClick={() => void logout()}>Sair</button>
+        </div>
+      )}
       <nav className="bottomnav" aria-label="Menu inferior">
-        {items.map((i) => (
+        {bottom.map((i) => (
           <NavLink key={i.to} to={i.to} end={i.to === "/"} className="bottomlink">
             <span aria-hidden className="bottomicon">{i.icon}</span>
             {i.label}
           </NavLink>
         ))}
-        <button className="bottomlink" onClick={() => void logout()}>
-          <span aria-hidden className="bottomicon">⎋</span>Sair
-        </button>
+        {extra.length > 0 ? (
+          <button className={`bottomlink ${maisAberto ? "active" : ""}`} aria-expanded={maisAberto} onClick={() => setMaisAberto((v) => !v)}>
+            <span aria-hidden className="bottomicon">☰</span>Mais
+          </button>
+        ) : (
+          <button className="bottomlink" onClick={() => void logout()}>
+            <span aria-hidden className="bottomicon">⎋</span>Sair
+          </button>
+        )}
       </nav>
     </div>
   );

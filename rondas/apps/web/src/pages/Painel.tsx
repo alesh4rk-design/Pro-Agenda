@@ -58,7 +58,10 @@ export function PainelPage() {
 
       {(can("usuario.gerir") || can("sistema.configurar")) && (
         <div className="grid-actions">
-          {can("usuario.gerir") && <Link className="btn btn-primary btn-lg" to="/usuarios">Gerenciar acessos</Link>}
+          {can("empresa.gerir") && <Link className="btn btn-primary btn-lg" to="/empresas">Empresas</Link>}
+          {can("contrato.gerir") && <Link className="btn btn-lg" to="/contratos">Contratos</Link>}
+          {can("posto.gerir") && <Link className="btn btn-lg" to="/postos">Postos</Link>}
+          {can("usuario.gerir") && <Link className={`btn btn-lg ${can("empresa.gerir") ? "" : "btn-primary"}`} to="/usuarios">Gerenciar acessos</Link>}
           {can("auditoria.ver") && <Link className="btn btn-lg" to="/auditoria">Ver auditoria</Link>}
           {can("sistema.configurar") && <Link className="btn btn-lg" to="/configuracoes">Configurar sistema</Link>}
         </div>
