@@ -1,0 +1,23 @@
+# Cloudflare Worker — API do sistema de rondas.
+# Segredos (NUNCA versionar): definir com `wrangler secret put <NOME>`
+#   GOOGLE_CLIENT_EMAIL   e-mail da conta de serviço do Firebase
+#   GOOGLE_PRIVATE_KEY    chave privada (PEM) da conta de serviço
+name = "rondas-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+FIREBASE_PROJECT_ID = "SEU-PROJETO-FIREBASE"
+# Origens autorizadas a chamar a API (separadas por vírgula).
+ALLOWED_ORIGINS = "https://SEU-APP.pages.dev"
+
+# Etapas 4, 6 e 8: rotinas agendadas (geração de rondas, status, retenção de fotos).
+# [triggers]
+# crons = ["*/5 * * * *", "15 3 * * *"]
+
+# Etapa 5: fotografias no R2.
+# [[r2_buckets]]
+# binding = "FOTOS"
+# bucket_name = "rondas-fotos"

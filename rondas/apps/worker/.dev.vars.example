@@ -1,0 +1,9 @@
+# Copie para .dev.vars (não versionado) para rodar `wrangler dev` contra os emuladores.
+ENVIRONMENT=development
+FIREBASE_PROJECT_ID=demo-rondas
+ALLOWED_ORIGINS=http://localhost:5173
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
+FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099
+# Em produção use `wrangler secret put` em vez deste arquivo:
+# GOOGLE_CLIENT_EMAIL=firebase-adminsdk-xxx@SEU-PROJETO.iam.gserviceaccount.com
+# GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"

@@ -1,5 +1,7 @@
 # Central do Inspetor
 
+> Este repositório também contém, em [`rondas/`](rondas/README.md), o **Sistema de Rondas Patrimoniais** (projeto independente: React + Cloudflare Workers + Firebase).
+
 Sistema web pessoal de organização profissional para Inspetor de Treinamento em segurança patrimonial. HTML/CSS/JS puros, PWA, Firebase (Auth + Firestore).
 
 ## Como configurar

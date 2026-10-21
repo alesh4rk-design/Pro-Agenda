@@ -1,0 +1,160 @@
+rules_version = '2';
+
+// =============================================================================
+// Regras de segurança — Sistema de Rondas Patrimoniais
+//
+// Princípios:
+//  1. NENHUMA escrita direta pelo cliente. Toda alteração passa pelo Worker
+//     (conta de serviço), que valida permissões e grava auditoria.
+//  2. Leituras isoladas por empresa e, para supervisor/vigilante, por posto/contrato.
+//  3. O documento users/{uid} é a fonte da verdade: as claims do token (role, cid)
+//     precisam coincidir com ele e a conta precisa estar ativa. Isso torna o
+//     bloqueio imediato e impede uso de claims desatualizadas.
+//  4. Tudo que não está listado é negado.
+//
+// Custo: cada consulta autorizada consome até 2 leituras extras (users/{uid} e
+// companies/{cid}) — get() é cobrado por avaliação de consulta, não por documento.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------- utilitários
+    function signedIn() {
+      return request.auth != null;
+    }
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function claimRole() {
+      return request.auth.token.get('role', '');
+    }
+    function claimCid() {
+      return request.auth.token.get('cid', '');
+    }
+    // Conta ativa e claims coerentes com o perfil gravado.
+    function activeUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && me().status == 'ativo'
+        && me().role == claimRole();
+    }
+    function isAdminGeral() {
+      return activeUser() && claimRole() == 'admin_geral';
+    }
+    function companyActive(cid) {
+      return get(/databases/$(database)/documents/companies/$(cid)).data.status == 'ativa';
+    }
+    // Membro ativo da empresa cid (qualquer perfil de empresa).
+    function memberOf(cid) {
+      return activeUser()
+        && claimRole() != 'admin_geral'
+        && claimCid() == cid
+        && me().companyId == cid
+        && companyActive(cid);
+    }
+    function isCompanyAdmin(cid) {
+      return memberOf(cid) && claimRole() == 'admin_empresa';
+    }
+    // Acesso a um recurso de posto: admin geral, admin da empresa, ou
+    // supervisor/vigilante vinculado ao posto (supervisor também por contrato).
+    function canSeePost(cid, contractId, postId) {
+      return isAdminGeral()
+        || isCompanyAdmin(cid)
+        || (memberOf(cid) && claimRole() == 'vigilante' && postId in me().get('postIds', []))
+        || (memberOf(cid) && claimRole() == 'supervisor'
+            && (postId in me().get('postIds', []) || contractId in me().get('contractIds', [])));
+    }
+    function canSeePostDoc(d) {
+      return canSeePost(d.companyId, d.get('contractId', ''), d.get('postId', ''));
+    }
+    function isSupervisorOf(d) {
+      return memberOf(d.companyId) && claimRole() == 'supervisor' && canSeePostDoc(d);
+    }
+
+    // ------------------------------------------------------------- plataforma
+    // Nome do sistema exibido na tela de login (público, sem dados sensíveis).
+    match /config/publico {
+      allow read: if true;
+    }
+    match /config/{docId} {
+      allow read: if isAdminGeral();
+    }
+
+    match /companies/{companyId} {
+      allow read: if isAdminGeral() || memberOf(companyId);
+    }
+
+    match /users/{uid} {
+      // O próprio usuário lê o seu perfil mesmo bloqueado (para a tela informar o motivo).
+      allow read: if (signedIn() && request.auth.uid == uid)
+        || isAdminGeral()
+        || isCompanyAdmin(resource.data.companyId)
+        // Supervisor vê os vigilantes da empresa (para acompanhar rondas).
+        || (memberOf(resource.data.companyId) && claimRole() == 'supervisor' && resource.data.role == 'vigilante');
+    }
+
+    match /auditLogs/{id} {
+      allow read: if isAdminGeral();
+    }
+
+    // ------------------------------------------------------------- empresa
+    match /contracts/{contractId} {
+      allow read: if isAdminGeral()
+        || isCompanyAdmin(resource.data.companyId)
+        || (memberOf(resource.data.companyId) && claimRole() == 'supervisor'
+            && contractId in me().get('contractIds', []));
+    }
+
+    match /posts/{postId} {
+      allow read: if canSeePost(resource.data.companyId, resource.data.contractId, postId);
+    }
+
+    // Recursos operacionais com companyId/contractId/postId desnormalizados.
+    match /checkpoints/{id} { allow read: if canSeePostDoc(resource.data); }
+    match /schedules/{id} {
+      allow read: if canSeePostDoc(resource.data);
+      match /versions/{v} { allow read: if canSeePostDoc(resource.data); }
+    }
+    match /rounds/{id} { allow read: if canSeePostDoc(resource.data); }
+    match /incidents/{id} { allow read: if canSeePostDoc(resource.data); }
+
+    // Checklists podem ser de empresa (sem posto): só admins; de posto: escopo do posto.
+    match /checklists/{id} {
+      allow read: if isAdminGeral()
+        || isCompanyAdmin(resource.data.companyId)
+        || (resource.data.get('postId', null) != null && canSeePostDoc(resource.data));
+      match /versions/{v} {
+        allow read: if isAdminGeral()
+          || isCompanyAdmin(resource.data.companyId)
+          || (resource.data.get('postId', null) != null && canSeePostDoc(resource.data));
+      }
+    }
+
+    // Leituras de QR: vigilante vê somente as próprias.
+    match /scans/{id} {
+      allow read: if isAdminGeral()
+        || isCompanyAdmin(resource.data.companyId)
+        || isSupervisorOf(resource.data)
+        || (memberOf(resource.data.companyId) && claimRole() == 'vigilante'
+            && resource.data.userId == request.auth.uid);
+    }
+
+    match /photos/{id} {
+      // Metadados apenas; o arquivo no R2 é servido pelo Worker com URL temporária.
+      allow read: if isAdminGeral()
+        || isCompanyAdmin(resource.data.companyId)
+        || isSupervisorOf(resource.data)
+        || (memberOf(resource.data.companyId) && resource.data.userId == request.auth.uid);
+    }
+
+    match /alerts/{id} {
+      allow read: if isAdminGeral() || isCompanyAdmin(resource.data.companyId) || isSupervisorOf(resource.data);
+    }
+
+    // checkpointSecrets, idempotency, usage e qualquer outro caminho: somente backend.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
