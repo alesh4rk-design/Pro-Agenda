@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 512" role="img" aria-label="Central do Inspetor">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f6aa8"/>
+      <stop offset="1" stop-color="#0f2c4a"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <path d="M256 36 440 98v140c0 118-78 202-184 238C150 440 72 356 72 238V98z" fill="url(#g)"/>
+    <path d="M256 60 418 114v124c0 104-68 178-162 211C162 416 94 342 94 238V114z" fill="none" stroke="#bd9140" stroke-width="10" stroke-linejoin="round"/>
+    <rect x="156" y="160" width="200" height="190" rx="22" fill="#fff"/>
+    <path d="M156 182a22 22 0 0 1 22-22h156a22 22 0 0 1 22 22v34H156z" fill="#bd9140"/>
+    <rect x="204" y="138" width="16" height="42" rx="8" fill="#0f2c4a"/>
+    <rect x="292" y="138" width="16" height="42" rx="8" fill="#0f2c4a"/>
+    <path d="M208 285l34 34 64-72" fill="none" stroke="#163d66" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="470" y="236" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif" font-size="46" font-weight="500" letter-spacing="6" fill="#bd9140">CENTRAL DO</text>
+  <text x="466" y="318" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif" font-size="84" font-weight="800" fill="#163d66">Inspetor</text>
+</svg>
