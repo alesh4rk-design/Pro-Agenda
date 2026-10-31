@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" role="img" aria-label="Amanda Peixoto Veterinária">
+  <defs>
+    <linearGradient id="h" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1fa6a0"/>
+      <stop offset="1" stop-color="#0b4f6c"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10 8) scale(1)">
+    <path d="M110 205C22 138 14 70 62 50c27-11 48 6 48 22 0-16 21-33 48-22 48 20 40 88-48 155z" fill="url(#h)"/>
+    <path d="M22 118h52l14-34 22 70 18-48 12 12h58" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="none" stroke="#e8795f" stroke-width="7" stroke-linecap="round">
+      <path d="M178 38a40 40 0 0 1 32 32" opacity=".45"/>
+      <path d="M178 20a58 58 0 0 1 50 50" opacity=".75"/>
+    </g>
+  </g>
+  <text x="290" y="125" font-family="Georgia,'Times New Roman',serif" font-size="68" fill="#0b4f6c">Amanda Peixoto</text>
+  <rect x="293" y="146" width="64" height="4" rx="2" fill="#e8795f"/>
+  <text x="292" y="184" font-family="Inter,'Segoe UI',Arial,sans-serif" font-size="25" font-weight="600" letter-spacing="7" fill="#1fa6a0">MÉDICA VETERINÁRIA</text>
+  <text x="292" y="218" font-family="Inter,'Segoe UI',Arial,sans-serif" font-size="21" letter-spacing="3" fill="#5b6b78">Ultrassonografia  •  Cardiologia</text>
+</svg>
