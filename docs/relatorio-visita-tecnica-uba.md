@@ -53,7 +53,9 @@ A cobertura desse posto ocorre exclusivamente no período noturno, das 19h às 0
 
 Durante a visita, foram identificados os seguintes recursos de apoio:
 
-- 01 banheiro na portaria principal;
+- 01 banheiro na portaria principal, com vaso sanitário, pia e chuveiro;
+- Banheiro interno na portaria da Sede;
+- Banheiro na área da churrasqueira;
 - 01 micro-ondas;
 - 01 geladeira;
 - Bancada destinada às refeições;
@@ -76,7 +78,8 @@ O posto foi contratado considerando rondas realizadas a pé. No entanto, essa co
 A CI do posto contempla:
 
 - Sistema de controle de rondas Patrol;
-- 02 rádios comunicadores HT.
+- 02 rádios comunicadores HT;
+- 02 smartphones.
 
 A administração também manifestou interesse em disponibilizar mais 01 rádio comunicador HT para a portaria principal orgânica, com o objetivo de melhorar a comunicação entre a portaria e os colaboradores da Haganá.
 
