@@ -69,7 +69,7 @@ A administração manifestou interesse na realização de rondas ostensivas no i
 
 O percurso informado possui aproximadamente 3 km, com duração média estimada entre 40 e 50 minutos, quando realizado integralmente a pé.
 
-Considerando a extensão do trajeto, é importante avaliar a organização das rondas, a frequência de execução e a compatibilidade com a permanência dos colaboradores nos pontos fixos contratados.
+Considerando a extensão do trajeto, foi identificada a necessidade de que as rondas sejam realizadas de moto ou carro, e não exclusivamente a pé. Dessa forma, é importante avaliar o tipo de veículo mais adequado, a disponibilização desse recurso, a organização das rondas, a frequência de execução e a compatibilidade com a permanência dos colaboradores nos pontos fixos contratados.
 
 A CI do posto contempla:
 
@@ -82,7 +82,7 @@ Esse equipamento adicional deverá ser considerado separadamente dos dois rádio
 
 ## 6. UNIFORMIZAÇÃO E ADEQUAÇÃO À ATIVIDADE
 
-Considerando as características do condomínio, a permanência dos colaboradores em áreas externas e a realização de rondas a pé com percurso aproximado de 3 km, entende-se que o posto não comporta a utilização de traje integralmente social, especialmente quanto ao uso de sapatos sociais.
+Considerando as características do condomínio, a permanência dos colaboradores em áreas externas e a realização de rondas com percurso aproximado de 3 km, parte delas com possível deslocamento a pé, entende-se que o posto não comporta a utilização de traje integralmente social, especialmente quanto ao uso de sapatos sociais.
 
 Recomenda-se a adoção de uniforme e calçados compatíveis com a atividade ostensiva e preventiva, proporcionando mobilidade, conforto e condições adequadas para os deslocamentos e a permanência nos pontos de observação.
 
@@ -95,6 +95,7 @@ Com base na visita técnica e nas manifestações da administração, foram iden
 - 02 repelentes de mosquito;
 - 08 armários para organização dos pertences pessoais dos colaboradores;
 - 01 rádio comunicador HT adicional para a portaria principal orgânica, além dos dois equipamentos previstos na CI;
+- Veículo (moto ou carro) para a realização das rondas ostensivas no interior do condomínio e no perímetro, a ser definido e disponibilizado;
 - Avaliação de uma alternativa de abrigo para o colaborador da portaria principal, considerando a intenção da administração de retirar a cabine de plástico atualmente utilizada.
 
 ## 8. PONTOS DE ATENÇÃO E ALINHAMENTOS OPERACIONAIS
