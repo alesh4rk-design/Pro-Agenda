@@ -63,6 +63,8 @@ Não foi identificado espaço específico destinado ao descanso dos colaboradore
 
 A administração também solicitou a disponibilização de 08 armários para organização e guarda dos pertences pessoais da equipe.
 
+Durante a visita, foi constatado que o cliente não cederá os cadeados para os colaboradores. Dessa forma, é necessário avaliar a disponibilização dos cadeados por parte da empresa, de modo que os armários possam ser utilizados com segurança.
+
 ## 5. CARACTERÍSTICAS E DINÂMICA OPERACIONAL
 
 A administração manifestou interesse na realização de rondas ostensivas no interior do condomínio, contemplando também o perímetro.
@@ -88,6 +90,7 @@ Com base na visita técnica e nas manifestações da administração, foram iden
 - 02 guarda-chuvas para utilização durante atividades externas e deslocamentos em dias de chuva;
 - 02 repelentes de mosquito;
 - 08 armários para organização dos pertences pessoais dos colaboradores;
+- Cadeados para os armários, uma vez que o cliente não os cederá aos colaboradores;
 - 01 rádio comunicador HT adicional para a portaria principal orgânica, além dos dois equipamentos previstos na CI;
 - Avaliação de uma alternativa de abrigo para o colaborador da portaria principal, considerando a intenção da administração de retirar a cabine de plástico atualmente utilizada.
 
