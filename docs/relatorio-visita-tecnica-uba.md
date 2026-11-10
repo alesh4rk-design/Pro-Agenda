@@ -63,9 +63,9 @@ Durante a visita, foram identificados os seguintes recursos de apoio:
 
 Não foi identificado espaço específico destinado ao descanso dos colaboradores.
 
-O cliente também solicitou a disponibilização de 08 armários para organização e guarda dos pertences pessoais da equipe.
+O cliente cederá aos colaboradores 06 armários do próprio condomínio para organização e guarda dos pertences pessoais da equipe.
 
-Durante a visita, foi constatado que o cliente não cederá os cadeados para os colaboradores. Dessa forma, é necessário avaliar a disponibilização dos cadeados por parte da empresa, de modo que os armários possam ser utilizados com segurança.
+Os cadeados não serão cedidos pelo cliente, devendo cada colaborador utilizar o seu próprio cadeado nos armários.
 
 ## 5. CARACTERÍSTICAS E DINÂMICA OPERACIONAL
 
@@ -92,8 +92,6 @@ Com base na visita técnica e nas manifestações do cliente, foram identificada
 - 01 banco semi-sentado para o colaborador da portaria principal;
 - 02 guarda-chuvas para utilização durante atividades externas e deslocamentos em dias de chuva;
 - 02 repelentes de mosquito;
-- 08 armários para organização dos pertences pessoais dos colaboradores;
-- Cadeados para os armários, uma vez que o cliente não os cederá aos colaboradores;
 - 01 rádio comunicador HT adicional para a portaria principal orgânica, além dos dois equipamentos previstos na CI;
 - Avaliação de uma alternativa de abrigo para o colaborador da portaria principal, considerando a intenção do cliente de retirar a cabine de plástico atualmente utilizada.
 
