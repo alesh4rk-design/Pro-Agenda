@@ -69,7 +69,7 @@ A administração manifestou interesse na realização de rondas ostensivas no i
 
 O percurso informado possui aproximadamente 3 km, com duração média estimada entre 40 e 50 minutos, quando realizado integralmente a pé.
 
-Considerando a extensão do trajeto, o posto possui perfil de rondas motorizadas, realizadas de moto ou carro. Dessa forma, é importante avaliar a organização das rondas, a frequência de execução e a compatibilidade com a permanência dos colaboradores nos pontos fixos contratados.
+O posto foi contratado considerando rondas realizadas a pé. No entanto, essa condição não é compatível com a realidade do contrato: um percurso de aproximadamente 3 km, a ser percorrido pelo colaborador, torna inviável a execução a pé de forma regular sem comprometer a permanência nos pontos fixos. Nesse cenário, o ideal seria que as rondas fossem realizadas de moto ou carro. Dessa forma, é importante avaliar a viabilidade dessa adequação, a organização das rondas, a frequência de execução e a compatibilidade com a permanência dos colaboradores nos pontos fixos contratados.
 
 A CI do posto contempla:
 
