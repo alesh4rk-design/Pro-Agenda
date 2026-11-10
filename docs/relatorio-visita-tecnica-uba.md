@@ -69,7 +69,7 @@ A administração manifestou interesse na realização de rondas ostensivas no i
 
 O percurso informado possui aproximadamente 3 km, com duração média estimada entre 40 e 50 minutos, quando realizado integralmente a pé.
 
-Considerando a extensão do trajeto, foi identificada a necessidade de que as rondas sejam realizadas de moto ou carro, e não exclusivamente a pé. Dessa forma, é importante avaliar o tipo de veículo mais adequado, a disponibilização desse recurso, a organização das rondas, a frequência de execução e a compatibilidade com a permanência dos colaboradores nos pontos fixos contratados.
+Considerando a extensão do trajeto, o posto possui perfil de rondas motorizadas, realizadas de moto ou carro. Dessa forma, é importante avaliar a organização das rondas, a frequência de execução e a compatibilidade com a permanência dos colaboradores nos pontos fixos contratados.
 
 A CI do posto contempla:
 
@@ -80,13 +80,7 @@ A administração também manifestou interesse em disponibilizar mais 01 rádio 
 
 Esse equipamento adicional deverá ser considerado separadamente dos dois rádios previstos na CI do posto.
 
-## 6. UNIFORMIZAÇÃO E ADEQUAÇÃO À ATIVIDADE
-
-Considerando as características do condomínio, a permanência dos colaboradores em áreas externas e a realização de rondas com percurso aproximado de 3 km, parte delas com possível deslocamento a pé, entende-se que o posto não comporta a utilização de traje integralmente social, especialmente quanto ao uso de sapatos sociais.
-
-Recomenda-se a adoção de uniforme e calçados compatíveis com a atividade ostensiva e preventiva, proporcionando mobilidade, conforto e condições adequadas para os deslocamentos e a permanência nos pontos de observação.
-
-## 7. NECESSIDADES E SOLICITAÇÕES IDENTIFICADAS
+## 6. NECESSIDADES E SOLICITAÇÕES IDENTIFICADAS
 
 Com base na visita técnica e nas manifestações da administração, foram identificadas as seguintes necessidades:
 
@@ -95,18 +89,17 @@ Com base na visita técnica e nas manifestações da administração, foram iden
 - 02 repelentes de mosquito;
 - 08 armários para organização dos pertences pessoais dos colaboradores;
 - 01 rádio comunicador HT adicional para a portaria principal orgânica, além dos dois equipamentos previstos na CI;
-- Veículo (moto ou carro) para a realização das rondas ostensivas no interior do condomínio e no perímetro, a ser definido e disponibilizado;
 - Avaliação de uma alternativa de abrigo para o colaborador da portaria principal, considerando a intenção da administração de retirar a cabine de plástico atualmente utilizada.
 
-## 8. PONTOS DE ATENÇÃO E ALINHAMENTOS OPERACIONAIS
+## 7. PONTOS DE ATENÇÃO E ALINHAMENTOS OPERACIONAIS
 
-### 8.1. Vistorias de veículos
+### 7.1. Vistorias de veículos
 
 Foi identificada a necessidade de atenção quanto à realização de vistorias em caminhões e veículos de pequeno porte pelos colaboradores.
 
 Recomenda-se alinhar com a administração a finalidade dessas verificações, sua abrangência e os procedimentos esperados, de modo que a atividade permaneça compatível com as atribuições contratadas e com a natureza ostensiva e preventiva do serviço de vigia.
 
-### 8.2. Delimitação das atribuições
+### 7.2. Delimitação das atribuições
 
 É importante reforçar que o contrato contempla exclusivamente atividades de vigia ostensivo e preventivo.
 
@@ -114,13 +107,13 @@ Não fazem parte das atribuições contratadas o controle de acesso, a autoriza�
 
 A atuação dos colaboradores deverá estar direcionada à presença ostensiva, observação das áreas internas e do perímetro, realização de rondas, identificação de situações atípicas e comunicação de ocorrências que possam representar riscos à segurança, às instalações ou aos frequentadores.
 
-### 8.3. Comunicação com a portaria orgânica
+### 7.3. Comunicação com a portaria orgânica
 
 A comunicação entre os colaboradores da Haganá e a portaria orgânica deve ser alinhada e mantida de forma objetiva, especialmente para o compartilhamento de informações sobre situações atípicas, movimentações relevantes e ocorrências identificadas durante as rondas.
 
 A disponibilização de um rádio HT adicional para a portaria principal poderá contribuir para melhorar esse fluxo de comunicação.
 
-## 9. CONSIDERAÇÕES FINAIS
+## 8. CONSIDERAÇÕES FINAIS
 
 A visita técnica permitiu identificar as características dos postos, a distribuição contratual dos colaboradores, as condições de infraestrutura e as expectativas da administração em relação à execução dos serviços.
 
